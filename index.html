@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792840840"></script></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792842253"></script></head><body>
 <title>Role Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -266,19 +266,16 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.tab{transition:background .15s ease}}
 </style>
 
+<link rel="stylesheet" href="app.css?v=1792842253">
 <div class="wrap">
-<header>
-  <div class="eyebrow">Life sciences · healthcare · consulting · finance</div>
-  <h1>Role Radar</h1>
-  <p class="lede">Your day, the companies you watch, open roles worth a decision, the applications you have sent and the people you are in touch with. The morning run builds Today before you wake; the evening sweep rolls anything unfinished to tomorrow. Everything you change here saves straight away.</p>
-</header>
+
 
 <div class="tabs" role="tablist" aria-label="Sections">
-  <button class="tab" role="tab" id="t-today" aria-controls="today" data-tab="today"><b id="cToday">0</b><span>Today</span><small id="cTodaySub">to act on</small></button>
-  <button class="tab" role="tab" id="t-companies" aria-controls="companies" data-tab="companies"><b id="cCo">0</b><span>Companies</span><small>you are watching</small></button>
-  <button class="tab" role="tab" id="t-open" aria-controls="open" data-tab="open"><b id="cOpen">0</b><span>Open roles</span><small id="cOpenSub">to decide on</small></button>
-  <button class="tab" role="tab" id="t-applied" aria-controls="applied" data-tab="applied"><b id="cApp">0</b><span>Applied</span><small id="cAppSub">in progress</small></button>
-  <button class="tab" role="tab" id="t-outreach" aria-controls="outreach" data-tab="outreach"><b id="cOut">0</b><span>Outreach</span><small id="cOutSub">awaiting reply</small></button>
+  <button class="tab" role="tab" id="t-today" aria-controls="today" data-tab="today"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h9"/></svg><b id="cToday">0</b><span>Today</span><small id="cTodaySub">to act on</small></button>
+  <button class="tab" role="tab" id="t-companies" aria-controls="companies" data-tab="companies"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17V5l6-2v14M9 17V8l8 3v6M2 17h16"/></svg><b id="cCo">0</b><span>Companies</span><small>you are watching</small></button>
+  <button class="tab" role="tab" id="t-open" aria-controls="open" data-tab="open"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="m13 13 4 4"/></svg><b id="cOpen">0</b><span>Open roles</span><small id="cOpenSub">to decide on</small></button>
+  <button class="tab" role="tab" id="t-applied" aria-controls="applied" data-tab="applied"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 7.5 15 17 5"/></svg><b id="cApp">0</b><span>Applied</span><small id="cAppSub">in progress</small></button>
+  <button class="tab" role="tab" id="t-outreach" aria-controls="outreach" data-tab="outreach"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h14v9H8l-4 3v-3H3z"/></svg><b id="cOut">0</b><span>Outreach</span><small id="cOutSub">awaiting reply</small></button>
 </div>
 
 
@@ -293,36 +290,36 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
   </div>
   <details class="lists" id="todayLists"><summary>Show everything as lists</summary>
 
-  <div class="sechead"><h2>Did these happen?</h2><p>Things the runs could not confirm from your email, LinkedIn or calendar. One tap each.</p></div>
+  <div class="sechead"><h2>Did these happen?</h2></div>
   <div class="list" id="checkRows"><div class="row"><span class="t">Loading.</span></div></div>
 
-  <div class="sechead"><h2>Deadlines and calls</h2><p>Closing dates in the next 14 days for roles you shortlisted or are interviewing for, and today's calls with their printable cheat sheets.</p></div>
+  <div class="sechead"><h2>Deadlines and calls</h2></div>
   <div class="list" id="dayRows"></div>
 
-  <div class="sechead"><h2>To do</h2><p>Things that are not a call, a person, a role or a calendar block. Tick when done; anything unticked stays until it is.</p></div>
+  <div class="sechead"><h2>To do</h2></div>
   <div class="list" id="todoRows"></div>
   <details class="add" id="tdBox"><summary>Add a to do</summary><div class="grid"><input id="tdText" placeholder="What needs doing" aria-label="To do"><input id="tdDue" type="date" aria-label="Due date (optional)" title="Due date (optional)"><button id="tdAdd">Add</button></div></details>
 
   <div id="debriefWrap" hidden>
-    <div class="sechead"><h2>After your calls</h2><p>A few lines on each call while it is fresh: what you talked about, anything you promised, anyone they suggested. Tonight's sweep turns them into a thank you draft on the person's card.</p></div>
+    <div class="sechead"><h2>After your calls</h2></div>
     <div class="cards" id="debriefCards"></div>
   </div>
 
-  <div class="sechead"><h2>People to connect with</h2><p>Shortlisted from the companies you watch. Tap Yes for anyone worth a request. In the morning meeting say <b>connect</b> and the approved requests go out after one confirmation, spread across the week.</p></div>
+  <div class="sechead"><h2>People to connect with</h2></div>
   <div class="meter" id="pMeter"></div>
   <div class="cards" id="prospectCards"></div>
 
-  <div class="sechead"><h2>People</h2><p>Everyone you owe something, oldest first: replies, then first messages to people who accepted your request, then follow ups. Edit a draft, then Approve. Approved messages go out when you say send in your Claude session. Anything you leave comes back tomorrow.</p></div>
+  <div class="sechead"><h2>People</h2></div>
   <div class="cards" id="peopleCards"><div class="empty">Loading.</div></div>
 
-  <div class="sechead"><h2>Roles to decide</h2><p>New postings, nearest closing date first. Shortlisting puts application time on your calendar before the deadline.</p></div>
+  <div class="sechead"><h2>Roles to decide</h2></div>
   <div class="mini" id="decideCards"></div>
   </details>
 </section>
 
 <!-- COMPANIES -->
 <section id="companies" role="tabpanel" aria-labelledby="t-companies">
-  <div class="sechead"><h2>Companies</h2><p>Employers you want to work for. The daily search checks each careers page and writes what it found in the last column. Your own notes go in the notes column, which it never touches.</p></div>
+  <div class="sechead"><h2>Companies</h2></div>
   <div class="quick">
     <input id="qkIn" placeholder="Drop a company name or its website, e.g. Ipsen or ipsen.com" aria-label="Company name or website" autocomplete="off">
     <button id="qkAdd">Track company</button>
@@ -340,7 +337,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
 
 <!-- OPEN ROLES -->
 <section id="open" role="tabpanel" aria-labelledby="t-open" hidden>
-  <div class="sechead"><h2>Open roles</h2><p>Postings the daily search found, plus any you add. Shortlist the ones you mean to apply for; a shortlisted role with a closing date goes on your calendar. When you apply, press Mark applied and the role moves to the Applied tab.</p></div>
+  <div class="sechead"><h2>Open roles</h2></div>
   <div class="bar">
     <input type="search" id="qOpen" placeholder="Search company, title, location or notes" aria-label="Search open roles">
     <select id="fOpenSec" aria-label="Filter open roles by sector"></select>
@@ -363,7 +360,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
 
 <!-- APPLIED -->
 <section id="applied" role="tabpanel" aria-labelledby="t-applied" hidden>
-  <div class="sechead"><h2>Applied</h2><p>Every application you have sent. The daily search watches your inbox for replies and moves a role to interviewing, offer or rejected when the email is clear. Change the stage yourself any time.</p></div>
+  <div class="sechead"><h2>Applied</h2></div>
   <div class="pipe" id="pipe"></div>
   <div class="bar">
     <input type="search" id="qApp" placeholder="Search company, title or notes" aria-label="Search applications">
@@ -388,7 +385,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
 
 <!-- OUTREACH -->
 <section id="outreach" role="tabpanel" aria-labelledby="t-outreach" hidden>
-  <div class="sechead"><h2>Outreach</h2><p>Everyone you have emailed or messaged on LinkedIn. With no reply after 7 days a person moves onto the Today list for a follow up, and again at 14 days, then stops. Emails you send are picked up from your Sent folder and LinkedIn messages in your morning session.</p></div>
+  <div class="sechead"><h2>Outreach</h2></div>
   <div class="pipe" id="outPipe"></div>
   <div class="bar">
     <input type="search" id="qOut" placeholder="Search name, company or notes" aria-label="Search outreach">
@@ -398,13 +395,13 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
     <thead><tr><th>Person</th><th>Channel</th><th>Sent</th><th>Follow-ups</th><th>Status</th><th>Notes</th><th></th></tr></thead>
     <tbody id="outRows"><tr><td colspan="7" class="auto">Loading outreach.</td></tr></tbody>
   </table></div>
-  <div class="sechead"><h2>Connection requests</h2><p>Requests sent through your morning meeting. When someone accepts, they move to Today with a first message drafted. Requests still pending after three weeks are withdrawn.</p></div>
+  <div class="sechead"><h2>Connection requests</h2></div>
   <div class="pipe" id="reqPipe"></div>
   <div class="tablewrap"><table>
     <thead><tr><th>Person</th><th>Company</th><th>Why</th><th>Sent</th><th>Status</th></tr></thead>
     <tbody id="reqRows"><tr><td colspan="5" class="auto">Loading.</td></tr></tbody>
   </table></div>
-  <div class="sechead"><h2>Message templates</h2><p>First messages after someone accepts. The runs pick the template that fits the person and fill in the gaps: {first} is their first name, {company} the company, {area} a short phrase about the team or work that fits them. Edits save when you click away.</p></div>
+  <div class="sechead"><h2>Message templates</h2></div>
   <div class="tpls" id="tplBox"></div>
   <details class="add"><summary>Log a message you sent</summary>
     <div class="grid">
@@ -418,7 +415,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
   </details>
 </section>
 
-<footer><div class="sitefoot"><button class="link" onclick="rrSignIn()">Reconnect Google</button><button class="link" onclick="rrSignOut()">Sign out</button><span>Space turns the microphone on and off.</span></div>A discarded or rejected role stays in the record, so the search never adds it back. Nothing on this page sends a message by itself: approved messages go out only after you confirm in your Claude session.</footer>
+<div class="sidefoot"><button onclick="rrSignIn()">Reconnect Google</button><button onclick="rrSignOut()">Sign out</button></div>
 </div>
 <button class="fab" id="noteFab" aria-label="Notes" aria-expanded="false" aria-controls="notePanel"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z M14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="badge" id="noteBadge" hidden></span></button>
 <aside class="npanel" id="notePanel" hidden aria-label="Notes">
@@ -435,7 +432,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
   <div id="edFields"></div>
   <div class="btns"><button type="button" class="quiet" id="edCancel">Cancel</button><button type="submit" id="edSave">Save</button></div>
 </form></dialog>
-<div class="vbar" id="vBar"><div class="vr"><input id="vIn" placeholder="Speak or type: yes, not yet, track AstraZeneca, call moved to 17:30…" aria-label="Voice command" autocomplete="off"><button id="vMic" class="ghost" aria-label="Listen">Mic</button><button id="vGo">Go</button></div><div class="vh" id="vHint">Say a command</div></div>
+<div class="vbar" id="vBar"><div class="vr"><input id="vIn" placeholder="Say or type a command" aria-label="Voice command" autocomplete="off"><button id="vMic" class="ghost" aria-label="Listen">Mic</button><button id="vGo">Go</button></div><div class="vh" id="vHint">Say a command</div></div>
 <button class="fab" id="vFab" hidden aria-label="Speak"></button>
 <div class="toast" id="toast" hidden></div>
 
@@ -1129,4 +1126,4 @@ if(BOOT_HASH==="debrief")show("today",false);
 })();
 </script>
 
-<script src="voice.js?v=1792840840"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
+<script src="voice.js?v=1792842253"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
