@@ -4,7 +4,7 @@
 (function(){
 const btn=$("vMic"),hint=$("vHint");
 let on=false,engine=null,cloudReady=null;
-let pref="local";try{pref=localStorage.getItem("rr-stt")||"local"}catch(e){}
+let pref="auto";try{pref=localStorage.getItem("rr-stt")||"auto"}catch(e){}
 function ui(){btn.classList.toggle("on",on);btn.textContent=on?"Listening":"Listen";btn.setAttribute("aria-pressed",String(on))}
 function status(t){hint.textContent=t}
 async function sttReady(){if(cloudReady!==null)return cloudReady;try{const {data}=await window.__sb.functions.invoke("stt",{body:{ping:true}});cloudReady=!!(data&&data.ready)}catch(e){cloudReady=false}return cloudReady}
@@ -13,7 +13,7 @@ function nameList(){const names=new Set();
     prospects.filter(p=>p.st==="suggested").forEach(p=>{names.add(p.name);names.add(p.co)});cos.slice(0,80).forEach(c=>names.add(c.name))}catch(e){}
   return [...names].filter(Boolean)}
 function vocab(){let t="";try{const c=curCard();if(c)t=c.title}catch(e){}
-  return ("Voice commands for a job search tracker: yes, no, not yet, drop it, skip, later, back, edit, approve, send, shortlist, discard, track, debrief, follow up, to do. Names: "+nameList().concat(t?[t]:[]).join(", ")).slice(0,1400)}
+  return ("Tim's job search voice commands. "+(t?"Card: "+t+". ":"")+"Names: "+nameList().join(", ")+". Commands: yes, done, not yet, drop it, skip, later, edit, approve, send.").slice(0,700)}
 /* ---- name repair for local Whisper, which can't take a vocabulary list ---- */
 const norm=s=>s.toLowerCase().normalize("NFD").replace(/(^|\s)(and|&)(?=\s|$)/g," ").replace(/[^a-z0-9]/g,"");
 const skel=s=>{s=norm(s).replace(/ph/g,"f").replace(/wh/g,"w").replace(/ck|c|q/g,"k").replace(/z/g,"s").replace(/y/g,"i");return (s[0]||"")+s.slice(1).replace(/[aeiouh]/g,"").replace(/(.)\1+/g,"$1")};
@@ -78,7 +78,7 @@ function toWav(pcmF){const pcm=new Int16Array(pcmF.length);for(let i=0;i<pcmF.le
 function b64(u8){let s="";for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
 async function transcribe(pcm){
   if(engine==="l"){const d=await localRun(pcm);if(d.error)throw new Error(d.error);const c=clean(d.text);return c?snapCommand(fixNames(c)):""}
-  const {data,error}=await window.__sb.functions.invoke("stt",{body:{audio:b64(toWav(pcm)),prompt:vocab()}});if(error)throw error;const c=clean(data&&data.text);return c?snapCommand(c):""}
+  const {data,error}=await window.__sb.functions.invoke("stt",{body:{audio:b64(toWav(pcm)),prompt:vocab()}});if(error)throw error;const c=clean(data&&data.text);return c?snapCommand(fixNames(c)):""}
 async function drain(){if(W.busy)return;if(engine==="l"&&wState!=="ready")return;W.busy=true;
   while(W.queue.length&&on){const pcm=W.queue.shift();status("Transcribing…");
     try{const t0=performance.now(),t=await transcribe(pcm),ms=performance.now()-t0;console.log("[voice] "+(pcm.length/16000).toFixed(1)+"s of speech, transcribed in "+Math.round(ms)+"ms: "+t);
@@ -116,8 +116,8 @@ function stopC(){try{rec&&rec.abort()}catch(e){}rec=null}
 async function start(auto){
   try{
     if(pref==="chrome"){if(!startC())return}
-    else if(pref==="cloud"&&await sttReady()){await startCapture();engine="w";status("Listening…")}
-    else if(pref!=="cloud"&&(window.Worker&&window.WebAssembly)){await startCapture();engine="l";loadWorker();
+    else if(pref!=="local"&&await sttReady()){await startCapture();engine="w";status("Listening…")}
+    else if(window.Worker&&window.WebAssembly){await startCapture();engine="l";loadWorker();
       status(wState==="ready"?"Listening…":"Loading the speech model…");if(wState==="error"){on=true;await fallback()}}
     else if(await sttReady()){await startCapture();engine="w";status("Listening…")}
     else if(!startC())return;

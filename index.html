@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792844625"></script></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792845040"></script></head><body>
 <title>Role Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -267,7 +267,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.tab{transition:background .15s ease}}
 </style>
 
-<link rel="stylesheet" href="app.css?v=1792844625">
+<link rel="stylesheet" href="app.css?v=1792845040">
 <div class="wrap">
 
 
@@ -711,7 +711,11 @@ function personVisible(o){
 }
 function people(){return outs.filter(personVisible).sort((a,b)=>(OWE_ORDER[a.owe]??2)-(OWE_ORDER[b.owe]??2)||String(a.owed_since||"9").localeCompare(String(b.owed_since||"9")))}
 function todayDoc(){const t=today();return days.find(d=>d.id===t)||days.filter(d=>d.id<=t).sort((a,b)=>b.id.localeCompare(a.id))[0]}
-function openChecks(){return checks.filter(c=>!c.ans||c.ans_date===today())}
+const HIDE_CHECK=/cfa study/i, ckKey=c=>String(c.text||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+function liveChecks(){const best=new Map();checks.filter(c=>!c.ans&&!HIDE_CHECK.test(c.text||"")).forEach(c=>{const k=ckKey(c),b=best.get(k);if(!b||String(c.date||"")>String(b.date||""))best.set(k,c)});return [...best.values()]}
+function openChecks(){return liveChecks().concat(checks.filter(c=>["done","notyet","drop"].includes(c.ans)&&c.ans_date===today()&&!HIDE_CHECK.test(c.text||"")))}
+async function answerCheck(id,ans){const c=checks.find(x=>x.id===id);const ids=c?checks.filter(x=>x.id===id||(!x.ans&&ckKey(x)===ckKey(c))).map(x=>x.id):[id];
+  for(const i of ids)await db.doc("checks/"+i).update(i===id?{ans,ans_date:today()}:{ans:ans?"dup":"",ans_date:today()})}
 function renderToday(){
   const d=todayDoc(), ps=people(), oc=openChecks().filter(c=>!c.ans);
   const appr=outs.filter(o=>o.act==="approved"&&o.owe);
@@ -761,7 +765,7 @@ function renderToday(){
   fillRs();
 }
 $("checkRows").addEventListener("click",async e=>{const id=e.target.dataset.chk;if(!id||!db)return;const c=checks.find(x=>x.id===id);const a=e.target.dataset.ans;
-  try{await db.doc("checks/"+id).update({ans:c&&c.ans===a?"":a,ans_date:today()});}catch(err){toast("Could not save that. Reload and try again.",true)}});
+  try{await answerCheck(id,c&&c.ans===a?"":a);}catch(err){toast("Could not save that. Reload and try again.",true)}});
 $("peopleCards").addEventListener("click",async e=>{const pa=e.target.dataset.pa,id=e.target.dataset.id;if(!pa||!id||!db)return;
   const patch=pa==="clear"?{act:"",act_date:""}:{act:pa,act_date:today()};
   if(pa==="approved"){const ta=document.querySelector(`.pDraft[data-id="${CSS.escape(id)}"]`);if(!ta||!ta.value.trim()){toast("Write the message before approving it.",true);return}patch.draft=ta.value}
@@ -923,7 +927,7 @@ function buildDeckRaw(skp){
       add({kind:"deadline",id:r.id,title:`${r.co}, ${r.role}`,sub:(d===0?"Closes today":d===1?"Closes tomorrow":`Closes in ${d} days, ${fmtDate(r.deadline)}`)+` · ${r.st}`,body:r.why||"",link:r.link})});
   debriefs.filter(d=>(d.st||"waiting")==="waiting"&&d.when&&new Date(d.when)<=new Date()).sort((a,b)=>String(b.when).localeCompare(String(a.when)))
     .forEach(d=>add({kind:"debrief",id:d.id,title:`How did the call with ${d.name} go?`,sub:`${d.co||""}${d.co?" · ":""}${fmtDate(String(d.when).slice(0,10))}`,body:"Say what you talked about, anything you promised, and anyone they suggested you contact. I'll file it on their card, add any to dos and draft the thank you."}));
-  const tasks=[...checks.filter(c=>!c.ans).map(c=>({kind:"task",id:"c/"+c.id,title:c.text,sub:c.why||"",link:c.link,ord:c.date||t})),
+  const tasks=[...liveChecks().map(c=>({kind:"task",id:"c/"+c.id,title:c.text,sub:c.why||"",link:c.link,ord:c.date||t})),
     ...todos.filter(x=>!x.done&&(!x.due||x.due<=t)).map(x=>({kind:"task",id:"t/"+x.id,title:x.text,sub:x.due?(x.due<t?`Overdue since ${fmtDate(x.due)}`:"Due today"):"To do, no date",body:x.why||"",ord:x.due||"9999"}))];
   tasks.sort((a,b)=>String(a.ord).localeCompare(String(b.ord))).forEach(add);
   people().filter(o=>o.act!=="approved").forEach(o=>add({kind:"reply",id:o.id,title:o.name,sub:`${o.co||""} · ${(o.draft_ch||o.ch)==="email"?"Email":"LinkedIn"} · ${OWE_LBL[o.owe]||""}`,body:o.ctx||"",last:lastNote(o),draft:o.draft||""}));
@@ -971,7 +975,7 @@ async function act(c,choice){
       if(choice==="drop"){if(["new","shortlisted"].includes(r.st))await db.doc("roles/"+c.id).update({st:"discarded",note:line("dropped, not done")});
         else await db.doc("roles/"+c.id).update({deadline:"",deadline_dropped:r.deadline,note:line("dropped, not done")});toast("Dropped, marked not done")}}
     if(c.kind==="task"){const [t,id]=c.id.split("/");
-      if(t==="c")await db.doc("checks/"+id).update({ans:choice==="yes"?"done":choice==="notyet"?"notyet":"drop",ans_date:today()});
+      if(t==="c")await answerCheck(id,choice==="yes"?"done":choice==="notyet"?"notyet":"drop");
       else{if(choice==="yes")await db.doc("todos/"+id).update({done:true,done_date:today()});
         else if(choice==="notyet")await db.doc("todos/"+id).update({due:tomorrow()});
         else await db.doc("todos/"+id).update({done:true,done_date:today(),dropped:true});}
@@ -1152,4 +1156,4 @@ if(BOOT_HASH==="debrief")show("today",false);
 })();
 </script>
 
-<script src="voice.js?v=1792844625"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
+<script src="voice.js?v=1792845040"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
