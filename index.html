@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792845040"></script></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792852761"></script></head><body>
 <title>Role Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -267,7 +267,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.tab{transition:background .15s ease}}
 </style>
 
-<link rel="stylesheet" href="app.css?v=1792845040">
+<link rel="stylesheet" href="app.css?v=1792852761">
 <div class="wrap">
 
 
@@ -326,8 +326,9 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
     <button id="qkAdd">Track company</button>
     <span class="hint">The next morning run fills in the details, works out the best places to search its roles, and starts checking them. Names already on the list are not added twice.</span>
   </div>
+  <div class="regtabs" id="coReg" role="tablist" aria-label="Companies by region"></div>
   <div class="bar">
-    <input type="search" id="qCo" placeholder="Search name, region or notes" aria-label="Search companies">
+    <input type="search" id="qCo" placeholder="Search name or notes" aria-label="Search companies">
     <select id="fCoSec" aria-label="Filter companies by sector"></select>
   </div>
   <div class="tablewrap"><table>
@@ -483,10 +484,20 @@ function renderCounts(){
 }
 
 /* companies */
+const REGIONS=[["all","All"],["gulf","Gulf"],["uk","UK"],["europe","Europe"],["other","Elsewhere"]];
+const REG_RX={gulf:/gulf|uae|emirates|abu dhabi|dubai|sharjah|saudi|riyadh|jeddah|qatar|doha|bahrain|kuwait|oman|muscat|mena|middle east/i,
+  uk:/\buk\b|united kingdom|britain|england|scotland|wales|london|cambridge|oxford|manchester|edinburgh/i,
+  europe:/europe|\beu\b|germany|france|paris|switzerland|basel|zurich|geneva|netherlands|amsterdam|belgium|ghent|brussels|denmark|copenhagen|sweden|norway|finland|spain|madrid|barcelona|italy|milan|ireland|dublin|portugal|lisbon|austria|vienna|poland|czech|greece|cyprus|luxembourg/i};
+function regionsOf(c){const r=`${c.region||""}`;const out=["gulf","uk","europe"].filter(k=>REG_RX[k].test(r));return out.length?out:["other"]}
+let coReg="all";try{coReg=localStorage.getItem("rr-coreg")||"all"}catch(e){}
+function renderCoReg(){const n={all:cos.length,gulf:0,uk:0,europe:0,other:0};cos.forEach(c=>regionsOf(c).forEach(k=>n[k]++));
+  $("coReg").innerHTML=REGIONS.filter(([k])=>k!=="other"||n.other).map(([k,l])=>`<button role="tab" data-reg="${k}" aria-selected="${coReg===k}">${l} <span class="n">${n[k]}</span></button>`).join("")}
+$("coReg").addEventListener("click",e=>{const b=e.target.closest("[data-reg]");if(!b)return;coReg=b.dataset.reg;try{localStorage.setItem("rr-coreg",coReg)}catch(x){}renderCos()});
 function renderCos(){
   if(!loaded.cos)return;
+  renderCoReg();
   const q=$("qCo").value.trim().toLowerCase(), fs=$("fCoSec").value;
-  const rows=cos.filter(c=>(!fs||c.sector===fs)&&(!q||`${c.name} ${c.region} ${c.mine} ${c.nt} ${c.about||""}`.toLowerCase().includes(q)))
+  const rows=cos.filter(c=>(coReg==="all"||regionsOf(c).includes(coReg))&&(!fs||c.sector===fs)&&(!q||`${c.name} ${c.region} ${c.mine} ${c.nt} ${c.about||""}`.toLowerCase().includes(q)))
     .sort((a,b)=>String(a.name).localeCompare(String(b.name)));
   if(!cos.length){$("coRows").innerHTML=`<tr><td colspan="7" class="auto">No companies yet. Drop one in the box above and the morning run will start checking it.</td></tr>`;return}
   if(!rows.length){$("coRows").innerHTML=`<tr><td colspan="7" class="auto">No companies match this filter.</td></tr>`;return}
@@ -1156,4 +1167,4 @@ if(BOOT_HASH==="debrief")show("today",false);
 })();
 </script>
 
-<script src="voice.js?v=1792845040"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
+<script src="voice.js?v=1792852761"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>

@@ -144,3 +144,9 @@ button,.seg button[aria-pressed="true"]{color:var(--on-accent)}
 button.ghost,button.ed-b,.seg button,#vMic{color:var(--ink)}
 button.quiet{color:var(--muted)}
 button.x{color:var(--faint);background:transparent;border-color:transparent}
+/* region tabs inside Companies */
+.regtabs{display:flex;gap:4px;border-bottom:1px solid var(--line,#e5e7eb);margin:6px 0 12px;overflow-x:auto}
+.regtabs button{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;padding:8px 12px;margin-bottom:-1px;color:var(--muted,#6b7280);font-weight:500;cursor:pointer;white-space:nowrap;box-shadow:none}
+.regtabs button:hover{color:var(--ink,#111827);background:none}
+.regtabs button[aria-selected="true"]{color:var(--accent,#4F5BD5);border-bottom-color:var(--accent,#4F5BD5)}
+.regtabs .n{font-size:12px;color:var(--muted,#6b7280);margin-left:2px}
