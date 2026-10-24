@@ -34,6 +34,18 @@ function fixNames(text){
         if(sim>=0.78||sim2>=0.8){const tail=(win[win.length-1].match(/[.,!?;:]+$/)||[""])[0];const parts=name.split(/\s+/);parts[parts.length-1]+=tail;words.splice(i,span,...parts);lock.splice(i,span,...parts.map(()=>true));i+=parts.length-1;}
       }}}
   return words.join(" ")}
+/* ---- snap short utterances to the nearest command ("dun" -> "done", "not ye" -> "not yet") so they never wait on Claude ---- */
+function snapCommand(t){
+  const words=t.toLowerCase().replace(/[^a-z' ]/g," ").trim().split(/\s+/).filter(Boolean);
+  if(!words.length||words.length>3||/^(track|add|remind|call|move|watch)$/.test(words[0]))return t;
+  try{if(wordClass(t))return t}catch(e){return t}
+  const AL={"skipped":"skip","skipping":"skip","sending":"send","know":"no","yeah sure":"yes","yes please":"yes","yes it did":"yes","no it didnt":"not yet","next one":"next","dropped":"drop","done it":"done","all done":"done","its done":"done"};
+  const al=AL[words.join(" ").replace(/'/g,"")];if(al)return al;
+  const s=words.join(" "),sk=skel(s);let best=null,score=0;
+  for(const arr of Object.values(WORDS))for(const ph of arr){const a=1-lev(s,ph)/Math.max(s.length,ph.length);
+    const ps=skel(ph);const b=sk.length>=2&&ps.length>=2?1-lev(sk,ps)/Math.max(sk.length,ps.length):0;
+    const v=Math.max(a,b>=0.99&&a>=0.4?0.9:0);if(v>score){score=v;best=ph}}
+  return score>=0.72?best:t}
 function clean(t){t=String(t||"").replace(/\[[^\]]*\]|\([^)]*\)|\*[^*]*\*/g," ").replace(/\s+/g," ").trim();
   if(!t||/^(you|thank you|thanks for watching|bye|okay|\.+)[.!]?$/i.test(t))return "";return t}
 /* ---- local Whisper worker ---- */
@@ -65,11 +77,11 @@ function toWav(pcmF){const pcm=new Int16Array(pcmF.length);for(let i=0;i<pcmF.le
   new Int16Array(buf,44).set(pcm);return new Uint8Array(buf)}
 function b64(u8){let s="";for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
 async function transcribe(pcm){
-  if(engine==="l"){const d=await localRun(pcm);if(d.error)throw new Error(d.error);return fixNames(clean(d.text))}
-  const {data,error}=await window.__sb.functions.invoke("stt",{body:{audio:b64(toWav(pcm)),prompt:vocab()}});if(error)throw error;return clean(data&&data.text)}
+  if(engine==="l"){const d=await localRun(pcm);if(d.error)throw new Error(d.error);const c=clean(d.text);return c?snapCommand(fixNames(c)):""}
+  const {data,error}=await window.__sb.functions.invoke("stt",{body:{audio:b64(toWav(pcm)),prompt:vocab()}});if(error)throw error;const c=clean(data&&data.text);return c?snapCommand(c):""}
 async function drain(){if(W.busy)return;if(engine==="l"&&wState!=="ready")return;W.busy=true;
   while(W.queue.length&&on){const pcm=W.queue.shift();status("Transcribing…");
-    try{const t=await transcribe(pcm);
+    try{const t0=performance.now(),t=await transcribe(pcm),ms=performance.now()-t0;console.log("[voice] "+(pcm.length/16000).toFixed(1)+"s of speech, transcribed in "+Math.round(ms)+"ms: "+t);
       if(t){status("Heard: "+t);while(deckBusy)await new Promise(r=>setTimeout(r,200));$("vIn").value=t;await voiceSubmit()}
       else status("Listening…")}
     catch(e){console.warn(e);status("Couldn't transcribe that one. Try again.")}}
@@ -79,7 +91,7 @@ function onFrame(data,rate){const level=rms(data),now=performance.now(),frameMs=
   if(!W.speaking){W.floor=W.floor*0.97+Math.min(level,0.05)*0.03;W.pre.push(new Float32Array(data));while(W.pre.length*frameMs>450)W.pre.shift();
     if(level>thr){W.loud++;if(W.loud>=2){W.speaking=true;W.frames=W.pre.slice();W.pre=[];W.start=now;W.lastLoud=now;if(!W.busy)status("Hearing you…")}}else W.loud=0;return}
   W.frames.push(new Float32Array(data));if(level>thr*0.7)W.lastLoud=now;
-  if(now-W.lastLoud>1100||now-W.start>28000){W.speaking=false;W.loud=0;const dur=now-W.start,frames=W.frames;W.frames=[];
+  if(now-W.lastLoud>(now-W.start<1800?650:1000)||now-W.start>28000){W.speaking=false;W.loud=0;const dur=now-W.start,frames=W.frames;W.frames=[];
     if(dur>450){W.queue.push(to16k(frames,rate));
       if(engine==="l"&&wState!=="ready")status("Got it. Waiting for the speech model to finish loading…");drain()}
     else if(!W.busy)status("Listening…")}}
