@@ -1,0 +1,1132 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792840840"></script></head><body>
+<title>Role Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Source+Sans+3:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: four tabs that follow the search. Companies you watch, open roles to decide on, applications in flight, people you have contacted. */
+:root{
+  --bg:#F3F5F4; --surface:#FFFFFF; --surface-2:#E8EDEB;
+  --ink:#16201D; --muted:#52615C; --faint:#84918C;
+  --line:#D6DEDA; --line-strong:#BCC8C3;
+  --accent:#1F5E73; --accent-soft:#DCEAEF;
+  --ok:#2E6B47; --ok-soft:#DEEFE4;
+  --warn:#8A5A0B; --warn-soft:#F5E9CF;
+  --crit:#9B3328; --crit-soft:#F5DFDB;
+  --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Sans 3","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1513; --surface:#161E1B; --surface-2:#1E2925;
+  --ink:#E4ECE8; --muted:#9AA9A3; --faint:#6F7D78;
+  --line:#26322E; --line-strong:#34433E;
+  --accent:#6CB4CB; --accent-soft:#13303A;
+  --ok:#76C496; --ok-soft:#15281D;
+  --warn:#D6A653; --warn-soft:#2B2414;
+  --crit:#E28B7E; --crit-soft:#2D1A17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1513; --surface:#161E1B; --surface-2:#1E2925;
+  --ink:#E4ECE8; --muted:#9AA9A3; --faint:#6F7D78;
+  --line:#26322E; --line-strong:#34433E;
+  --accent:#6CB4CB; --accent-soft:#13303A;
+  --ok:#76C496; --ok-soft:#15281D;
+  --warn:#D6A653; --warn-soft:#2B2414;
+  --crit:#E28B7E; --crit-soft:#2D1A17; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:1100px;margin:0 auto;padding-inline:20px;padding-block:36px 80px;display:flex;flex-direction:column;gap:28px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+h1{font-family:var(--display);font-size:clamp(32px,6vw,46px);line-height:1.05;margin:8px 0 0;letter-spacing:-.02em;text-wrap:balance}
+h2{font-family:var(--display);font-size:20px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.lede{color:var(--muted);max-width:66ch;margin:10px 0 0;font-size:16.5px}
+
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.tab{all:unset;cursor:pointer;background:var(--surface);padding:12px 16px;display:flex;flex-direction:column;gap:2px;border-bottom:3px solid transparent;min-width:0}
+.tab b{font-family:var(--mono);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.15}
+.tab span{font-size:13.5px;color:var(--muted);font-weight:500}
+.tab small{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+.tab[aria-selected="true"]{border-bottom-color:var(--accent);background:var(--accent-soft)}
+.tab[aria-selected="true"] b{color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+section{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sechead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px}
+.sechead p{margin:0;font-size:14px;color:var(--muted);flex:1 1 300px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar input[type=search]{flex:1 1 220px;min-width:0}
+.bar label{font-size:13.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line-strong);border-radius:3px;padding:7px 10px;min-width:0}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:7px 12px;border-radius:3px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);cursor:pointer;white-space:nowrap}
+button.ghost{background:transparent;color:var(--accent)}
+button.quiet{background:transparent;border-color:var(--line-strong);color:var(--muted)}
+button.x{border:none;background:transparent;color:var(--faint);padding:4px 7px;font-size:13px}
+button.x:hover{color:var(--crit);background:var(--crit-soft)}
+button.link{all:unset;cursor:pointer;color:var(--accent);font-family:var(--mono);font-size:12px;border-bottom:1px solid currentColor}
+
+.quick{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:4px;padding:12px 14px}
+.quick input{flex:1 1 260px;font-size:15px}
+.quick .hint{flex:1 1 100%;font-size:13px;color:var(--faint)}
+.routes{display:flex;flex-direction:column;gap:3px}
+.routes a{font-family:var(--mono);font-size:11.5px;word-break:normal}
+td.n .about{display:block;font-weight:400;color:var(--muted);font-size:12.5px;margin-top:2px}
+.tag.q{background:var(--accent-soft);color:var(--accent)}
+tr.flash td{background:var(--warn-soft)}
+.deckwrap{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+.deckhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.deckhead h2{margin-right:6px}
+#deckStack{position:relative;min-height:300px;max-width:680px;width:100%;margin:0 auto}
+.fcard,.ghost1,.ghost2{background:var(--surface);border:1px solid var(--line-strong);border-radius:12px}
+.ghost1,.ghost2{position:absolute;left:0;right:0;top:0;bottom:0}
+.ghost1{transform:translate(8px,8px);opacity:.6}.ghost2{transform:translate(16px,16px);opacity:.3}
+.fcard{position:relative;padding:22px 24px;display:flex;flex-direction:column;gap:10px;min-height:300px;box-shadow:0 6px 20px rgba(0,0,0,.08);transition:transform .18s ease,opacity .18s ease}
+.fcard.outl{transform:translateX(-120%) rotate(-8deg);opacity:0}.fcard.outr{transform:translateX(120%) rotate(8deg);opacity:0}
+.fcard[data-kind="deadline"]{border-top:5px solid var(--warn)}.fcard[data-kind="debrief"]{border-top:5px solid var(--ok)}.fcard[data-kind="confirm"]{border-top:5px solid var(--crit)}
+.fk{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.ft{font-family:var(--display);font-size:24px;font-weight:700;line-height:1.2}
+.ft a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line-strong)}
+.fs{color:var(--muted);font-size:15px}.fl{font-size:14px;color:var(--muted);font-style:italic}
+.fb{font-size:15px;white-space:pre-wrap}
+.fd{white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:12px 14px;font-size:15px;line-height:1.5}
+.fo{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.fo button{font-size:12px;padding:10px 14px}
+.fo kbd{font-family:var(--mono);opacity:.7;margin-right:2px}
+.vbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:19;width:min(680px,calc(100vw - 110px));background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:8px 10px;display:flex;flex-direction:column;gap:4px}
+.vbar .vr{display:flex;gap:6px;align-items:center}
+.vbar input{flex:1;font-size:16px;border:none;background:transparent;padding:8px 6px}
+.vbar input:focus-visible{outline:none}
+.vbar .vh{font-size:12px;color:var(--faint);padding:0 6px}
+#vMic.on{background:var(--crit);border-color:var(--crit)}
+details.lists>summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600;padding:8px 0}
+details.lists[open]{display:flex;flex-direction:column;gap:14px}
+.wrap{padding-bottom:140px}
+@media (max-width:620px){.vbar{width:calc(100vw - 90px);left:12px;transform:none}.ft{font-size:20px}}
+#gate{position:fixed;inset:0;z-index:100;background:var(--bg);display:grid;place-items:center;padding:24px}
+#gate .gbox{max-width:420px;display:flex;flex-direction:column;gap:12px}
+#gate button{font-size:13px;padding:12px 16px;align-self:flex-start}
+#vMic.on{background:var(--crit);border-color:var(--crit);color:var(--surface)}
+#vMic.on::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--surface);margin-right:6px;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.sitefoot{display:flex;gap:14px;flex-wrap:wrap}
+details.add{background:var(--surface);border:1px solid var(--line);border-radius:4px}
+details.add summary{cursor:pointer;padding:10px 14px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600}
+details.add .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;padding:0 14px 14px}
+
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:4px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px}
+.card[data-st="shortlisted"]{border-left-color:var(--warn)}
+.card[data-st="discarded"]{border-left-color:var(--line-strong);opacity:.6}
+.card .co{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.card .title{font-size:17px;font-weight:600;line-height:1.3}
+.card .title a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line-strong)}
+.card .title a:hover{border-bottom-color:var(--accent)}
+.meta{font-size:13.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 14px}
+.why{font-size:14.5px;color:var(--muted);max-width:74ch}
+.card .side{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:150px}
+.card textarea{grid-column:1/-1;width:100%;min-height:34px;resize:vertical;font-size:13.5px}
+.card details.jd{grid-column:1/-1;font-size:14px;color:var(--muted)}
+.card details.jd summary{cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.card details.jd div{white-space:pre-wrap;margin-top:6px;max-height:340px;overflow:auto;padding:10px 12px;background:var(--surface-2);border-radius:3px;line-height:1.5}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.tag.dl{background:var(--warn-soft);color:var(--warn)}
+.tag.short{background:var(--warn-soft);color:var(--warn)}
+.empty{background:var(--surface);border:1px dashed var(--line-strong);border-radius:4px;padding:22px;color:var(--muted)}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:820px}
+th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:10px 12px;border-bottom:1px solid var(--line-strong);background:var(--surface-2);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.n{font-weight:600}
+td.n small{display:block;font-weight:400;color:var(--faint);font-size:12.5px}
+td a{color:var(--accent);font-family:var(--mono);font-size:12px;word-break:break-all}
+td.mono{font-family:var(--mono);font-size:12px;color:var(--faint);white-space:nowrap;font-variant-numeric:tabular-nums}
+td.auto{color:var(--faint);font-size:12.5px;max-width:28ch}
+td textarea{width:100%;min-width:200px;min-height:32px;resize:vertical;font-size:13px}
+td input[type=date]{font-family:var(--mono);font-size:12px;padding:5px 6px}
+td select{font-size:13px;padding:5px 6px}
+tr[data-st="interviewing"] td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+tr[data-st="offer"] td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+tr[data-st="applied"] td:first-child{box-shadow:inset 3px 0 0 var(--line-strong)}
+tr[data-st="rejected"],tr[data-st="closed"]{opacity:.6}
+tr[data-st="waiting"] td:first-child{box-shadow:inset 3px 0 0 var(--line-strong)}
+tr[data-due="1"] td:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+tr[data-st="replied"] td:first-child,tr[data-st="meeting"] td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+.pill{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:2px;white-space:nowrap}
+.p-applied,.p-waiting,.p-closed{background:var(--surface-2);color:var(--muted)}
+.p-interviewing{background:var(--accent-soft);color:var(--accent)}
+.p-offer,.p-replied,.p-meeting{background:var(--ok-soft);color:var(--ok)}
+.p-rejected{background:var(--crit-soft);color:var(--crit)}
+.p-due{background:var(--warn-soft);color:var(--warn)}
+.pipe{display:flex;gap:8px;flex-wrap:wrap}
+.fu{display:flex;flex-direction:column;gap:2px;font-family:var(--mono);font-size:11.5px;color:var(--faint);white-space:nowrap;font-variant-numeric:tabular-nums}
+.fu .due{color:var(--warn);font-weight:600}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);font-family:var(--mono);font-size:12px;padding:8px 14px;border-radius:3px;z-index:10}
+.toast.err{background:var(--crit);color:var(--surface)}
+footer{border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--faint)}
+
+/* Today tab */
+.daybar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px 16px}
+.daybar .when{font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-.01em}
+.daybar .sum{color:var(--muted);font-size:14.5px;flex:1 1 320px}
+.alert{background:var(--crit-soft);color:var(--crit);border-radius:4px;padding:10px 14px;font-size:14.5px}
+.sendbar{background:var(--ok-soft);color:var(--ok);border-radius:4px;padding:10px 14px;font-size:14.5px}
+.list{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.row{background:var(--surface);padding:10px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center}
+.row .t{font-size:15px}
+.row .t a{color:var(--accent)}
+.row .s{font-size:13px;color:var(--faint)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.seg button{background:transparent;color:var(--accent)}
+.row[data-ans="done"]{opacity:.55}
+.person{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.person[data-owe="reply"]{border-left-color:var(--ok)}
+.person[data-owe="intro"]{border-left-color:var(--warn)}
+.meter{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:13.5px;color:var(--muted)}
+.meter .bar2{flex:0 0 160px;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.meter .bar2 i{display:block;height:100%;background:var(--accent)}
+.pgrp{background:var(--surface);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.pgrp .gh{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 14px;background:var(--surface-2);font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 14px;border-top:1px solid var(--line);align-items:center}
+.prow .t{font-size:15px;font-weight:600}
+.prow .t a{color:var(--ink)}
+.prow .s{font-size:13.5px;color:var(--muted)}
+.prow[data-st="approved"]{background:var(--ok-soft)}
+.prow[data-st="skipped"]{opacity:.5}
+.tpl{display:flex;flex-direction:column;gap:4px;font-size:13.5px;color:var(--muted)}
+.tpl textarea{width:100%;min-height:120px;resize:vertical;font-size:14px;line-height:1.45;color:var(--ink)}
+.tpls{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.person[data-act="approved"]{border-left-color:var(--ok);background:var(--ok-soft)}
+.person .hd{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.person .nm{font-weight:600;font-size:17px}
+.person .ctx{font-size:14.5px;color:var(--muted)}
+.person textarea{width:100%;min-height:90px;resize:vertical;font-size:14px;line-height:1.45}
+.person .acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.person .acts input[type=date]{font-family:var(--mono);font-size:12px;padding:5px 6px}
+.grp{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:6px}
+.mini{display:flex;flex-direction:column;gap:6px}
+.mini .card{padding:10px 14px}
+/* notes and to do */
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;width:54px;height:54px;border-radius:50%;padding:0;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.22)}
+.fab .badge{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;border-radius:10px;background:var(--warn);color:var(--surface);font-size:11px;display:grid;place-items:center;padding:0 5px;letter-spacing:0}
+.npanel{position:fixed;top:0;right:0;bottom:0;width:min(380px,100vw);z-index:21;background:var(--bg);border-left:1px solid var(--line-strong);box-shadow:-6px 0 24px rgba(0,0,0,.18);display:flex;flex-direction:column;gap:10px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.npanel .nhead{display:flex;justify-content:space-between;align-items:center}
+.npanel textarea{width:100%;min-height:90px;resize:vertical;font-size:15px}
+.npanel .bar{justify-content:space-between}
+.npanel .hint{font-size:12.5px;color:var(--faint)}
+.npanel .nlist{overflow-y:auto;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;flex:0 1 auto}
+.npanel .nlist{flex:1 1 auto}
+.npanel .nlist:empty{display:none}
+.npanel .seg button{font-size:10.5px;padding:5px 9px}
+.note .acts{display:flex;gap:4px;align-items:flex-start}
+.note textarea{width:100%;min-height:70px;font-size:14.5px;margin-top:4px}
+.note .eb{display:flex;gap:6px;margin-top:6px}
+@media (max-width:620px){.npanel{top:auto;height:80vh;width:100vw;border-left:none;border-top:1px solid var(--line-strong);border-radius:10px 10px 0 0}}
+.note{background:var(--surface);padding:10px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:start}
+.note .t{font-size:15px;white-space:pre-wrap}
+.note .r{font-size:13.5px;color:var(--muted)}
+.note[data-st="ask"]{box-shadow:inset 3px 0 0 var(--warn)}
+.note[data-st="done"],.note[data-st="dismissed"]{opacity:.75}
+.debrief{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warn);border-radius:4px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.debrief[data-st="saved"],.debrief[data-st="used"]{border-left-color:var(--ok)}
+.debrief textarea{width:100%;min-height:96px;resize:vertical;font-size:14.5px}
+.todo{background:var(--surface);padding:10px 14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start}
+.todo input[type=checkbox]{margin-top:4px;width:18px;height:18px}
+.todo .t{font-size:15px}
+.todo .s{font-size:12.5px;color:var(--faint);display:block}
+.todo .s.over{color:var(--crit)}
+.todo[data-done="1"] .t{text-decoration:line-through;color:var(--faint)}
+.todo .ef{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.todo .ef input[type=text]{flex:1 1 220px}
+.todo .acts{display:flex;gap:4px}
+/* edit dialog */
+dialog.ed{border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink);padding:0;width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 32px)}
+dialog.ed::backdrop{background:rgba(0,0,0,.45)}
+dialog.ed form{display:flex;flex-direction:column;gap:12px;padding:18px 20px}
+dialog.ed h3{font-family:var(--display);font-size:20px;margin:0}
+dialog.ed label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+dialog.ed input,dialog.ed select,dialog.ed textarea{width:100%}
+dialog.ed textarea{min-height:70px;resize:vertical}
+dialog.ed .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+dialog.ed .btns{display:flex;gap:8px;justify-content:flex-end;padding-top:4px}
+a.rsb{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:6px 10px;border-radius:3px;border:1px solid var(--accent);color:var(--accent);text-decoration:none;text-align:center;white-space:nowrap;display:inline-block}
+a.rsb:hover{background:var(--accent-soft)}
+button.ed-b{background:transparent;border:1px solid var(--line-strong);color:var(--muted);padding:4px 8px}
+button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
+@media (max-width:620px){dialog.ed .row2{grid-template-columns:1fr}}
+@media (max-width:620px){
+  .card{grid-template-columns:minmax(0,1fr)}
+  .card .side{flex-direction:row;flex-wrap:wrap;min-width:0}
+  .tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tab{padding:10px 10px}.tab b{font-size:20px}.tab small{display:none}
+}
+@media (prefers-reduced-motion:no-preference){.tab{transition:background .15s ease}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Life sciences · healthcare · consulting · finance</div>
+  <h1>Role Radar</h1>
+  <p class="lede">Your day, the companies you watch, open roles worth a decision, the applications you have sent and the people you are in touch with. The morning run builds Today before you wake; the evening sweep rolls anything unfinished to tomorrow. Everything you change here saves straight away.</p>
+</header>
+
+<div class="tabs" role="tablist" aria-label="Sections">
+  <button class="tab" role="tab" id="t-today" aria-controls="today" data-tab="today"><b id="cToday">0</b><span>Today</span><small id="cTodaySub">to act on</small></button>
+  <button class="tab" role="tab" id="t-companies" aria-controls="companies" data-tab="companies"><b id="cCo">0</b><span>Companies</span><small>you are watching</small></button>
+  <button class="tab" role="tab" id="t-open" aria-controls="open" data-tab="open"><b id="cOpen">0</b><span>Open roles</span><small id="cOpenSub">to decide on</small></button>
+  <button class="tab" role="tab" id="t-applied" aria-controls="applied" data-tab="applied"><b id="cApp">0</b><span>Applied</span><small id="cAppSub">in progress</small></button>
+  <button class="tab" role="tab" id="t-outreach" aria-controls="outreach" data-tab="outreach"><b id="cOut">0</b><span>Outreach</span><small id="cOutSub">awaiting reply</small></button>
+</div>
+
+
+<!-- TODAY -->
+<section id="today" role="tabpanel" aria-labelledby="t-today" hidden>
+  <div class="daybar"><span class="when" id="dWhen">Today</span><span class="sum" id="dSum">Loading your day.</span></div>
+  <div id="dAlert"></div>
+  <div id="dSend"></div>
+  <div class="deckwrap">
+    <div class="deckhead"><h2>Run through</h2><span id="deckCounts" class="bar"></span></div>
+    <div id="deckStack"><article class="fcard"><div class="fs">Loading your cards.</div></article></div>
+  </div>
+  <details class="lists" id="todayLists"><summary>Show everything as lists</summary>
+
+  <div class="sechead"><h2>Did these happen?</h2><p>Things the runs could not confirm from your email, LinkedIn or calendar. One tap each.</p></div>
+  <div class="list" id="checkRows"><div class="row"><span class="t">Loading.</span></div></div>
+
+  <div class="sechead"><h2>Deadlines and calls</h2><p>Closing dates in the next 14 days for roles you shortlisted or are interviewing for, and today's calls with their printable cheat sheets.</p></div>
+  <div class="list" id="dayRows"></div>
+
+  <div class="sechead"><h2>To do</h2><p>Things that are not a call, a person, a role or a calendar block. Tick when done; anything unticked stays until it is.</p></div>
+  <div class="list" id="todoRows"></div>
+  <details class="add" id="tdBox"><summary>Add a to do</summary><div class="grid"><input id="tdText" placeholder="What needs doing" aria-label="To do"><input id="tdDue" type="date" aria-label="Due date (optional)" title="Due date (optional)"><button id="tdAdd">Add</button></div></details>
+
+  <div id="debriefWrap" hidden>
+    <div class="sechead"><h2>After your calls</h2><p>A few lines on each call while it is fresh: what you talked about, anything you promised, anyone they suggested. Tonight's sweep turns them into a thank you draft on the person's card.</p></div>
+    <div class="cards" id="debriefCards"></div>
+  </div>
+
+  <div class="sechead"><h2>People to connect with</h2><p>Shortlisted from the companies you watch. Tap Yes for anyone worth a request. In the morning meeting say <b>connect</b> and the approved requests go out after one confirmation, spread across the week.</p></div>
+  <div class="meter" id="pMeter"></div>
+  <div class="cards" id="prospectCards"></div>
+
+  <div class="sechead"><h2>People</h2><p>Everyone you owe something, oldest first: replies, then first messages to people who accepted your request, then follow ups. Edit a draft, then Approve. Approved messages go out when you say send in your Claude session. Anything you leave comes back tomorrow.</p></div>
+  <div class="cards" id="peopleCards"><div class="empty">Loading.</div></div>
+
+  <div class="sechead"><h2>Roles to decide</h2><p>New postings, nearest closing date first. Shortlisting puts application time on your calendar before the deadline.</p></div>
+  <div class="mini" id="decideCards"></div>
+  </details>
+</section>
+
+<!-- COMPANIES -->
+<section id="companies" role="tabpanel" aria-labelledby="t-companies">
+  <div class="sechead"><h2>Companies</h2><p>Employers you want to work for. The daily search checks each careers page and writes what it found in the last column. Your own notes go in the notes column, which it never touches.</p></div>
+  <div class="quick">
+    <input id="qkIn" placeholder="Drop a company name or its website, e.g. Ipsen or ipsen.com" aria-label="Company name or website" autocomplete="off">
+    <button id="qkAdd">Track company</button>
+    <span class="hint">The next morning run fills in the details, works out the best places to search its roles, and starts checking them. Names already on the list are not added twice.</span>
+  </div>
+  <div class="bar">
+    <input type="search" id="qCo" placeholder="Search name, region or notes" aria-label="Search companies">
+    <select id="fCoSec" aria-label="Filter companies by sector"></select>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Company</th><th>Sector</th><th>Where to search</th><th>Open roles</th><th>Your notes</th><th>Latest check</th><th></th></tr></thead>
+    <tbody id="coRows"><tr><td colspan="7" class="auto">Loading companies.</td></tr></tbody>
+  </table></div>
+</section>
+
+<!-- OPEN ROLES -->
+<section id="open" role="tabpanel" aria-labelledby="t-open" hidden>
+  <div class="sechead"><h2>Open roles</h2><p>Postings the daily search found, plus any you add. Shortlist the ones you mean to apply for; a shortlisted role with a closing date goes on your calendar. When you apply, press Mark applied and the role moves to the Applied tab.</p></div>
+  <div class="bar">
+    <input type="search" id="qOpen" placeholder="Search company, title, location or notes" aria-label="Search open roles">
+    <select id="fOpenSec" aria-label="Filter open roles by sector"></select>
+    <label><input type="checkbox" id="showDisc"> Show discarded</label>
+  </div>
+  <div class="cards" id="openCards"><div class="empty">Loading open roles.</div></div>
+  <details class="add"><summary>Add a role you found yourself</summary>
+    <div class="grid">
+      <input id="oCo" placeholder="Company" aria-label="Company">
+      <input id="oRole" placeholder="Role title" aria-label="Role title">
+      <input id="oLoc" placeholder="Location" aria-label="Location">
+      <input id="oLink" placeholder="Posting URL" aria-label="Posting URL">
+      <input id="oDl" type="date" aria-label="Closing date (optional)" title="Closing date (optional)">
+      <select id="oSec" aria-label="Sector"></select>
+      <textarea id="oJd" placeholder="Job description (paste from the posting)" aria-label="Job description" style="grid-column:1/-1;min-height:70px"></textarea>
+      <button id="addOpen">Add role</button>
+    </div>
+  </details>
+</section>
+
+<!-- APPLIED -->
+<section id="applied" role="tabpanel" aria-labelledby="t-applied" hidden>
+  <div class="sechead"><h2>Applied</h2><p>Every application you have sent. The daily search watches your inbox for replies and moves a role to interviewing, offer or rejected when the email is clear. Change the stage yourself any time.</p></div>
+  <div class="pipe" id="pipe"></div>
+  <div class="bar">
+    <input type="search" id="qApp" placeholder="Search company, title or notes" aria-label="Search applications">
+    <label><input type="checkbox" id="showRej" checked> Show rejected</label>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Company and role</th><th>Location</th><th>Applied on</th><th>Stage</th><th>Notes and next step</th><th></th></tr></thead>
+    <tbody id="appRows"><tr><td colspan="6" class="auto">Loading applications.</td></tr></tbody>
+  </table></div>
+  <details class="add"><summary>Log an application sent outside the tracker</summary>
+    <div class="grid">
+      <input id="aCo" placeholder="Company" aria-label="Company">
+      <input id="aRole" placeholder="Role title" aria-label="Role title">
+      <input id="aLoc" placeholder="Location" aria-label="Location">
+      <input id="aLink" placeholder="Posting URL (optional)" aria-label="Posting URL">
+      <input id="aDate" type="date" aria-label="Date applied">
+      <select id="aSec" aria-label="Sector"></select>
+      <button id="addApp">Log application</button>
+    </div>
+  </details>
+</section>
+
+<!-- OUTREACH -->
+<section id="outreach" role="tabpanel" aria-labelledby="t-outreach" hidden>
+  <div class="sechead"><h2>Outreach</h2><p>Everyone you have emailed or messaged on LinkedIn. With no reply after 7 days a person moves onto the Today list for a follow up, and again at 14 days, then stops. Emails you send are picked up from your Sent folder and LinkedIn messages in your morning session.</p></div>
+  <div class="pipe" id="outPipe"></div>
+  <div class="bar">
+    <input type="search" id="qOut" placeholder="Search name, company or notes" aria-label="Search outreach">
+    <label><input type="checkbox" id="showClosed"> Show closed</label>
+  </div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Person</th><th>Channel</th><th>Sent</th><th>Follow-ups</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+    <tbody id="outRows"><tr><td colspan="7" class="auto">Loading outreach.</td></tr></tbody>
+  </table></div>
+  <div class="sechead"><h2>Connection requests</h2><p>Requests sent through your morning meeting. When someone accepts, they move to Today with a first message drafted. Requests still pending after three weeks are withdrawn.</p></div>
+  <div class="pipe" id="reqPipe"></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Person</th><th>Company</th><th>Why</th><th>Sent</th><th>Status</th></tr></thead>
+    <tbody id="reqRows"><tr><td colspan="5" class="auto">Loading.</td></tr></tbody>
+  </table></div>
+  <div class="sechead"><h2>Message templates</h2><p>First messages after someone accepts. The runs pick the template that fits the person and fill in the gaps: {first} is their first name, {company} the company, {area} a short phrase about the team or work that fits them. Edits save when you click away.</p></div>
+  <div class="tpls" id="tplBox"></div>
+  <details class="add"><summary>Log a message you sent</summary>
+    <div class="grid">
+      <input id="uName" placeholder="Name" aria-label="Name">
+      <input id="uCo" placeholder="Company and their role" aria-label="Company and their role">
+      <select id="uCh" aria-label="Channel"><option value="linkedin">LinkedIn</option><option value="email">Email</option></select>
+      <input id="uAddr" placeholder="Email address or LinkedIn URL" aria-label="Email address or LinkedIn URL">
+      <input id="uDate" type="date" aria-label="Date sent">
+      <button id="addOut">Log message</button>
+    </div>
+  </details>
+</section>
+
+<footer><div class="sitefoot"><button class="link" onclick="rrSignIn()">Reconnect Google</button><button class="link" onclick="rrSignOut()">Sign out</button><span>Space turns the microphone on and off.</span></div>A discarded or rejected role stays in the record, so the search never adds it back. Nothing on this page sends a message by itself: approved messages go out only after you confirm in your Claude session.</footer>
+</div>
+<button class="fab" id="noteFab" aria-label="Notes" aria-expanded="false" aria-controls="notePanel"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z M14 6l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="badge" id="noteBadge" hidden></span></button>
+<aside class="npanel" id="notePanel" hidden aria-label="Notes">
+  <div class="nhead"><h2>Notes</h2><button class="x" id="noteClose" aria-label="Close notes">✕</button></div>
+  <textarea id="noteIn" placeholder="Jot anything down. Tonight's sweep reads it and acts where it can, by adding it to your calendar, a role or a person, and keeps anything unclear to ask you in the morning meeting." aria-label="New note"></textarea>
+  <div class="bar"><span class="hint">Ctrl or Cmd + Enter</span><button id="noteAdd">Add note</button></div>
+  <div class="seg" id="noteFilter" role="group" aria-label="Show notes">
+    <button data-nf="all" aria-pressed="true">All</button><button data-nf="ask" aria-pressed="false">Needs your answer</button><button data-nf="new" aria-pressed="false">Not read yet</button>
+  </div>
+  <div class="nlist" id="noteRows"></div>
+</aside>
+<dialog class="ed" id="edDlg" aria-labelledby="edTitle"><form method="dialog" id="edForm">
+  <h3 id="edTitle">Edit</h3>
+  <div id="edFields"></div>
+  <div class="btns"><button type="button" class="quiet" id="edCancel">Cancel</button><button type="submit" id="edSave">Save</button></div>
+</form></dialog>
+<div class="vbar" id="vBar"><div class="vr"><input id="vIn" placeholder="Speak or type: yes, not yet, track AstraZeneca, call moved to 17:30…" aria-label="Voice command" autocomplete="off"><button id="vMic" class="ghost" aria-label="Listen">Mic</button><button id="vGo">Go</button></div><div class="vh" id="vHint">Say a command</div></div>
+<button class="fab" id="vFab" hidden aria-label="Speak"></button>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const SECTORS=["Pharma & Biotech","Healthcare & Life Sciences Consulting","Strategy Consulting","Healthcare Providers & Systems","Healthtech & Medtech","Life Sciences Investment","Finance & Banking","Research & Academia","Government & Public Health"];
+const OPEN=["new","shortlisted","discarded"], APPLIED=["applied","interviewing","offer","rejected"];
+const OUT_ST=["waiting","replied","meeting","closed"];
+const APP_ORDER={interviewing:0,offer:1,applied:2,rejected:3};
+let db=null, roles=[], cos=[], outs=[], loaded={roles:false,cos:false,outs:false};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const safeUrl=u=>/^https?:\/\//i.test(u||"")?u:"";
+const ymd=x=>`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
+const today=()=>ymd(new Date());
+const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]/g,"");
+function opts(el,list,all){el.innerHTML=(all?`<option value="">${all}</option>`:"")+list.map(v=>`<option>${esc(v)}</option>`).join("")}
+["fCoSec","fOpenSec"].forEach(i=>opts($(i),SECTORS,"All sectors"));["oSec","aSec"].forEach(i=>opts($(i),SECTORS));
+$("aDate").value=today();$("uDate").value=today();
+let tt;function toast(t,err){const el=$("toast");el.textContent=t;el.className="toast"+(err?" err":"");el.hidden=false;clearTimeout(tt);tt=setTimeout(()=>el.hidden=true,2200)}
+const fmtDate=d=>{if(!d)return"";const x=new Date(d+"T00:00:00");return isNaN(x)?d:x.toLocaleDateString("en-GB",{day:"numeric",month:"short"})};
+const addDays=(d,n)=>{const x=new Date(d+"T00:00:00");if(isNaN(x))return"";x.setDate(x.getDate()+n);return ymd(x)};
+
+/* tabs */
+const TABS=["today","companies","open","applied","outreach"];
+function show(tab,push){if(!TABS.includes(tab))tab="today";
+  TABS.forEach(t=>{$(t).hidden=t!==tab;$("t-"+t).setAttribute("aria-selected",t===tab?"true":"false");$("t-"+t).tabIndex=t===tab?0:-1});
+  if(push){try{history.replaceState(null,"","#"+tab)}catch(e){} try{localStorage.setItem("rr-tab",tab)}catch(e){}}}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>show(b.dataset.tab,true)));
+document.querySelector(".tabs").addEventListener("keydown",e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;
+  const cur=TABS.findIndex(t=>!$(t).hidden),n=(cur+(e.key==="ArrowRight"?1:TABS.length-1))%TABS.length;show(TABS[n],true);$("t-"+TABS[n]).focus()});
+let start=(location.hash||"").slice(1);if(!TABS.includes(start)){try{start=localStorage.getItem("rr-tab")||""}catch(e){start=""}}
+show(TABS.includes(start)?start:"today",false);
+
+/* outreach helpers */
+const isDue=o=>o.st==="waiting"&&o.sent&&((!o.fu1&&addDays(o.sent,7)<=today())||(o.fu1&&!o.fu2&&addDays(o.sent,14)<=today()));
+
+/* counts */
+function openRolesFor(name){const k=norm(name);return roles.filter(r=>(r.st==="new"||r.st==="shortlisted")&&norm(r.co)===k)}
+function renderCounts(){
+  const open=roles.filter(r=>r.st==="new"||r.st==="shortlisted"), short=open.filter(r=>r.st==="shortlisted").length;
+  const app=roles.filter(r=>APPLIED.includes(r.st)), live=app.filter(r=>r.st!=="rejected").length, iv=app.filter(r=>r.st==="interviewing").length;
+  const waiting=outs.filter(o=>o.st==="waiting"), due=outs.filter(isDue).length;
+  $("cCo").textContent=cos.length;$("cOpen").textContent=open.length;$("cApp").textContent=app.length;$("cOut").textContent=outs.filter(o=>o.st!=="closed").length;
+  $("cOpenSub").textContent=short?`${short} shortlisted`:"to decide on";
+  $("cAppSub").textContent=iv?`${iv} interviewing`:`${live} awaiting reply`;
+  $("cOutSub").textContent=due?`${due} follow-up due`:`${waiting.length} awaiting reply`;
+}
+
+/* companies */
+function renderCos(){
+  if(!loaded.cos)return;
+  const q=$("qCo").value.trim().toLowerCase(), fs=$("fCoSec").value;
+  const rows=cos.filter(c=>(!fs||c.sector===fs)&&(!q||`${c.name} ${c.region} ${c.mine} ${c.nt} ${c.about||""}`.toLowerCase().includes(q)))
+    .sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  if(!cos.length){$("coRows").innerHTML=`<tr><td colspan="7" class="auto">No companies yet. Drop one in the box above and the morning run will start checking it.</td></tr>`;return}
+  if(!rows.length){$("coRows").innerHTML=`<tr><td colspan="7" class="auto">No companies match this filter.</td></tr>`;return}
+  $("coRows").innerHTML=rows.map(c=>{const u=safeUrl(c.url),n=openRolesFor(c.name).length;return `<tr>
+    <td class="n">${esc(c.name)}${c.st==="queued"?` <span class="tag q">queued</span>`:""}<small>${esc(c.region)}</small>${c.about?`<span class="about">${esc(c.about)}</span>`:""}</td>
+    <td>${esc(c.sector)}</td>
+    <td>${routesCell(c,u)}</td>
+    <td>${n?`<button class="link" data-goto="${esc(c.name)}">${n} open</button>`:"<span class='tag'>none</span>"}</td>
+    <td><textarea data-co="${esc(c.id)}" class="coNote" placeholder="Why this company, contacts, timing" aria-label="Your notes on ${esc(c.name)}">${esc(c.mine)}</textarea></td>
+    <td class="auto">${c.ck?`<span class="mono">${esc(fmtDate(c.ck))}</span> `:""}${esc(c.nt||(c.ck?"":"Not checked yet"))}</td>
+    <td><button class="ed-b" data-edit="companies" data-eid="${esc(c.id)}" aria-label="Edit ${esc(c.name)}">Edit</button> <button class="x" data-del="${esc(c.id)}" aria-label="Remove ${esc(c.name)}">✕</button></td></tr>`}).join("");
+}
+function routesCell(c,u){
+  const rs=(Array.isArray(c.routes)?c.routes:[]).map(r=>{const href=safeUrl(r.url)||(r.q?"https://www.google.com/search?q="+encodeURIComponent(r.q):"");
+    return href?`<a href="${esc(href)}" target="_blank" rel="noopener" title="${esc(r.q||r.url)}">${esc(r.label||r.k||"Search")}</a>`:""}).filter(Boolean);
+  if(u&&!(c.routes||[]).some(r=>r.url===u))rs.unshift(`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/,"").slice(0,42))}</a>`);
+  return rs.length?`<div class="routes">${rs.join("")}</div>`:"<span class='tag'>search will find it</span>"}
+const hostOf=u=>{try{return new URL(/^https?:\/\//i.test(u)?u:"https://"+u).hostname.replace(/^(www|careers|jobs)\./,"").toLowerCase()}catch(e){return ""}};
+function defaultRoutes(name){const n=name.replace(/"/g,"");return [
+  {k:"linkedin",label:"LinkedIn jobs (entry level)",url:"https://www.linkedin.com/jobs/search/?keywords="+encodeURIComponent(n)+"&f_E=1%2C2"},
+  {k:"google",label:"Google search",q:`"${n}" (graduate OR analyst OR associate OR intern OR "entry level" OR trainee) (jobs OR careers)`}]}
+async function quickAdd(){
+  const raw=$("qkIn").value.trim();if(!raw)return;
+  if(!db){toast("Saving is unavailable in this view.",true);return}
+  const isUrl=/^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(raw)&&!/\s/.test(raw);
+  const host=isUrl?hostOf(raw):"";
+  let name=raw;
+  if(isUrl){const stem=host.split(".").slice(0,-1).join(" ")||host;name=stem.replace(/(^|\s)\S/g,m=>m.toUpperCase())}
+  const dup=cos.find(c=>norm(c.name)===norm(name)||(host&&[c.web,c.url].some(x=>x&&hostOf(x)===host))||norm(c.input)===norm(raw));
+  if(dup){toast(`${dup.name} is already on your list.`,true);$("qCo").value=dup.name;$("fCoSec").value="";renderCos();return}
+  const doc={name,input:raw,st:"queued",added:today(),sector:"",region:"",url:"",web:isUrl?"https://"+host:"",about:"",routes:defaultRoutes(name),seen:[],ck:"",nt:"Queued. The next morning run fills in the details and the best places to search.",mine:""};
+  try{await db.collection("companies").doc(slug(name)+"-"+Date.now().toString(36).slice(-4)).set(doc);$("qkIn").value="";toast(`${name} queued for the morning run`)}
+  catch(err){toast("Could not add that company.",true)}}
+$("qkAdd").addEventListener("click",quickAdd);
+$("qkIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();quickAdd()}});
+$("qCo").addEventListener("input",renderCos);$("fCoSec").addEventListener("change",renderCos);
+$("coRows").addEventListener("change",async e=>{if(!e.target.classList.contains("coNote")||!db)return;
+  try{await db.doc("companies/"+e.target.dataset.co).update({mine:e.target.value});toast("Note saved")}catch(err){toast("Could not save that note. Reload and try again.",true)}});
+$("coRows").addEventListener("click",async e=>{
+  const g=e.target.dataset.goto;if(g){$("qOpen").value=g;$("fOpenSec").value="";show("open",true);renderOpen();return}
+  const id=e.target.dataset.del;if(!id||!db)return;
+  if(e.target.dataset.armed!=="1"){e.target.dataset.armed="1";e.target.textContent="Remove?";setTimeout(()=>{if(e.target.isConnected){e.target.dataset.armed="";e.target.textContent="✕"}},4000);return}
+  try{await db.doc("companies/"+id).delete();toast("Company removed")}catch(err){toast("Could not remove that company.",true)}});
+
+/* Resume Studio hand-off: the link carries only the role id (#rr.<id>), because the viewer drops
+   long links. Resume Studio reads the role's details and job description from its own copy of
+   these roles, which the morning run keeps in sync. */
+const RS_URL="https://claude.ai/artifact/MB9iL3jMaxeuahY5eV1L87";
+function rsBtn(r){return `<a class="rsb" href="${RS_URL}#rr.${esc(String(r.id).replace(/[^A-Za-z0-9._~-]/g,""))}" target="_blank" rel="noopener" title="Open a tailored copy of your resume for this role in Resume Studio">Tailor resume</a>`}
+function fillRs(){}
+
+/* open roles */
+function renderOpen(){
+  if(!loaded.roles)return;
+  const q=$("qOpen").value.trim().toLowerCase(), fs=$("fOpenSec").value, disc=$("showDisc").checked;
+  const list=roles.filter(r=>OPEN.includes(r.st||"new")&&(disc||r.st!=="discarded")&&(!fs||r.sector===fs)&&
+      (!q||`${r.co} ${r.role} ${r.loc} ${r.note} ${r.why}`.toLowerCase().includes(q)))
+    .sort((a,b)=>({shortlisted:0,new:1,discarded:2}[a.st]??1)-({shortlisted:0,new:1,discarded:2}[b.st]??1)||String(b.found||"").localeCompare(String(a.found||"")));
+  const box=$("openCards");
+  if(!list.length){box.innerHTML=`<div class="empty">${roles.some(r=>OPEN.includes(r.st))?"No open roles match this filter.":"No open roles right now. The daily search adds new postings each morning, or add one yourself below."}</div>`;return}
+  box.innerHTML=list.map(r=>{const u=safeUrl(r.link),d=r.st==="discarded";return `<article class="card" data-st="${esc(r.st)}">
+    <div><div class="co">${esc(r.co)}</div>
+      <div class="title">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(r.role)}</a>`:esc(r.role)}</div>
+      <div class="meta"><span>${esc(r.loc||"Location not stated")}</span>${r.sector?`<span>${esc(r.sector)}</span>`:""}${r.found?`<span>found ${esc(fmtDate(r.found))}</span>`:""}</div>
+      ${r.why?`<div class="why">${esc(r.why)}</div>`:""}</div>
+    <div class="side">
+      ${r.deadline?`<span class="tag dl">closes ${esc(fmtDate(r.deadline))}</span>`:""}
+      ${r.st==="shortlisted"?`<span class="tag short">shortlisted</span>`:""}
+      ${d?`<button class="ghost" data-act="new" data-id="${esc(r.id)}">Restore</button>`:`
+      <button data-act="applied" data-id="${esc(r.id)}">Mark applied</button>
+      ${r.st==="shortlisted"?`<button class="ghost" data-act="new" data-id="${esc(r.id)}">Unshortlist</button>`:`<button class="ghost" data-act="shortlisted" data-id="${esc(r.id)}">Shortlist</button>`}
+      <button class="quiet" data-act="discarded" data-id="${esc(r.id)}">Discard</button>
+      ${rsBtn(r)}`}
+      <button class="ed-b" data-edit="roles" data-eid="${esc(r.id)}">Edit</button>
+    </div>
+    ${r.jd?`<details class="jd"><summary>Job description</summary><div>${esc(r.jd)}</div></details>`:""}
+    <textarea data-id="${esc(r.id)}" class="roleNote" placeholder="Notes" aria-label="Notes for ${esc(r.role)}">${esc(r.note)}</textarea>
+  </article>`}).join("");
+  fillRs();
+}
+["qOpen"].forEach(i=>$(i).addEventListener("input",renderOpen));["fOpenSec","showDisc"].forEach(i=>$(i).addEventListener("change",renderOpen));
+$("openCards").addEventListener("click",async e=>{const act=e.target.dataset.act,id=e.target.dataset.id;if(!act||!id||!db)return;
+  const patch={st:act};if(act==="applied"){const r=roles.find(x=>x.id===id);if(!r||!r.applied)patch.applied=today()}
+  try{await db.doc("roles/"+id).update(patch);
+    toast({applied:"Moved to Applied",shortlisted:"Shortlisted",discarded:"Discarded",new:"Restored"}[act])}catch(err){toast("Could not save that change. Reload and try again.",true)}});
+
+/* applied */
+function renderApplied(){
+  if(!loaded.roles)return;
+  const app=roles.filter(r=>APPLIED.includes(r.st));
+  $("pipe").innerHTML=APPLIED.map(s=>{const n=app.filter(r=>r.st===s).length;return `<span class="pill p-${s}">${n} ${s}</span>`}).join("");
+  const q=$("qApp").value.trim().toLowerCase(), rej=$("showRej").checked;
+  const list=app.filter(r=>(rej||r.st!=="rejected")&&(!q||`${r.co} ${r.role} ${r.loc} ${r.note}`.toLowerCase().includes(q)))
+    .sort((a,b)=>(APP_ORDER[a.st]??9)-(APP_ORDER[b.st]??9)||String(b.applied||"").localeCompare(String(a.applied||"")));
+  if(!app.length){$("appRows").innerHTML=`<tr><td colspan="6" class="auto">No applications yet. Press Mark applied on an open role, or log one below.</td></tr>`;return}
+  if(!list.length){$("appRows").innerHTML=`<tr><td colspan="6" class="auto">No applications match this filter.</td></tr>`;return}
+  $("appRows").innerHTML=list.map(r=>{const u=safeUrl(r.link);return `<tr data-st="${esc(r.st)}">
+    <td class="n">${esc(r.co)}<small>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(r.role)}</a>`:esc(r.role)}</small></td>
+    <td>${esc(r.loc)}</td>
+    <td><input type="date" class="appDate" data-id="${esc(r.id)}" value="${esc(r.applied)}" aria-label="Date applied to ${esc(r.co)}"></td>
+    <td><select class="appSt" data-id="${esc(r.id)}" aria-label="Stage for ${esc(r.co)}">${APPLIED.map(s=>`<option ${s===r.st?"selected":""}>${s}</option>`).join("")}<option value="shortlisted">back to open roles</option></select></td>
+    <td><textarea class="roleNote" data-id="${esc(r.id)}" placeholder="Contacts, interview dates, what happens next" aria-label="Notes for ${esc(r.co)}">${esc(r.note)}</textarea></td>
+    <td>${rsBtn(r)} <button class="ed-b" data-edit="roles" data-eid="${esc(r.id)}" aria-label="Edit ${esc(r.co)} application">Edit</button> <button class="x" data-del="${esc(r.id)}" aria-label="Delete ${esc(r.co)} application">✕</button></td></tr>`}).join("");
+  fillRs();
+}
+$("qApp").addEventListener("input",renderApplied);$("showRej").addEventListener("change",renderApplied);
+$("appRows").addEventListener("change",async e=>{const id=e.target.dataset.id;if(!id||!db)return;
+  try{
+    if(e.target.classList.contains("appSt")){await db.doc("roles/"+id).update({st:e.target.value});toast(e.target.value==="shortlisted"?"Moved back to Open roles":"Stage updated")}
+    else if(e.target.classList.contains("appDate")){await db.doc("roles/"+id).update({applied:e.target.value});toast("Date saved")}
+  }catch(err){toast("Could not save that change. Reload and try again.",true)}});
+$("appRows").addEventListener("click",async e=>{const id=e.target.dataset.del;if(!id||!db)return;
+  if(e.target.dataset.armed!=="1"){e.target.dataset.armed="1";e.target.textContent="Delete?";setTimeout(()=>{if(e.target.isConnected){e.target.dataset.armed="";e.target.textContent="✕"}},4000);return}
+  try{await db.doc("roles/"+id).delete();toast("Application deleted")}catch(err){toast("Could not delete that application.",true)}});
+
+/* outreach */
+function fuCell(o){
+  if(o.st!=="waiting")return `<div class="fu">${o.fu1?`<span>1st ${esc(fmtDate(o.fu1))}</span>`:""}${o.fu2?`<span>2nd ${esc(fmtDate(o.fu2))}</span>`:""}${!o.fu1&&!o.fu2?"<span>none</span>":""}</div>`;
+  if(!o.sent)return `<div class="fu"><span>add the date sent</span></div>`;
+  const d1=addDays(o.sent,7),d2=addDays(o.sent,14),t=today();
+  return `<div class="fu">${o.fu1?`<span>1st reminded ${esc(fmtDate(o.fu1))}</span>`:`<span class="${d1<=t?"due":""}">1st ${esc(fmtDate(d1))}</span>`}${o.fu2?`<span>2nd reminded ${esc(fmtDate(o.fu2))}</span>`:`<span class="${o.fu1&&d2<=t?"due":""}">2nd ${esc(fmtDate(d2))}</span>`}</div>`;
+}
+function renderOut(){
+  if(!loaded.outs)return;
+  const due=outs.filter(isDue).length;
+  $("outPipe").innerHTML=(due?`<span class="pill p-due">${due} follow-up due</span>`:"")+OUT_ST.map(s=>`<span class="pill p-${s}">${outs.filter(o=>o.st===s).length} ${s}</span>`).join("");
+  const q=$("qOut").value.trim().toLowerCase(), cl=$("showClosed").checked;
+  const ord={waiting:1,replied:0,meeting:0,closed:3};
+  const list=outs.filter(o=>(cl||o.st!=="closed")&&(!q||`${o.name} ${o.co} ${o.note} ${o.addr}`.toLowerCase().includes(q)))
+    .sort((a,b)=>(isDue(b)-isDue(a))||((ord[a.st]??2)-(ord[b.st]??2))||String(b.sent||"").localeCompare(String(a.sent||"")));
+  if(!outs.length){$("outRows").innerHTML=`<tr><td colspan="7" class="auto">No outreach logged yet. Log a LinkedIn message below, or send an email and the daily search will pick it up from your Sent folder.</td></tr>`;return}
+  if(!list.length){$("outRows").innerHTML=`<tr><td colspan="7" class="auto">No outreach matches this filter.</td></tr>`;return}
+  $("outRows").innerHTML=list.map(o=>{const u=safeUrl(o.addr);return `<tr data-st="${esc(o.st)}" data-due="${isDue(o)?1:0}">
+    <td class="n">${esc(o.name)}<small>${esc(o.co)}</small></td>
+    <td>${o.ch==="email"?"Email":"LinkedIn"}<br>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">profile</a>`:`<span class="mono">${esc(o.addr)}</span>`}</td>
+    <td><input type="date" class="outDate" data-id="${esc(o.id)}" value="${esc(o.sent)}" aria-label="Date sent to ${esc(o.name)}"></td>
+    <td>${fuCell(o)}</td>
+    <td><select class="outSt" data-id="${esc(o.id)}" aria-label="Status for ${esc(o.name)}">${OUT_ST.map(s=>`<option ${s===o.st?"selected":""}>${s}</option>`).join("")}</select></td>
+    <td><textarea class="outNote" data-id="${esc(o.id)}" placeholder="What you asked, what they said" aria-label="Notes for ${esc(o.name)}">${esc(o.note)}</textarea></td>
+    <td><button class="ed-b" data-edit="outreach" data-eid="${esc(o.id)}" aria-label="Edit ${esc(o.name)}">Edit</button> <button class="x" data-del="${esc(o.id)}" aria-label="Delete ${esc(o.name)}">✕</button></td></tr>`}).join("");
+}
+$("qOut").addEventListener("input",renderOut);$("showClosed").addEventListener("change",renderOut);
+$("outRows").addEventListener("change",async e=>{const id=e.target.dataset.id;if(!id||!db)return;
+  try{
+    if(e.target.classList.contains("outSt")){await db.doc("outreach/"+id).update({st:e.target.value});toast(e.target.value==="waiting"?"Back to awaiting reply":"Status updated")}
+    else if(e.target.classList.contains("outDate")){await db.doc("outreach/"+id).update({sent:e.target.value});toast("Date saved")}
+    else if(e.target.classList.contains("outNote")){await db.doc("outreach/"+id).update({note:e.target.value});toast("Note saved")}
+  }catch(err){toast("Could not save that change. Reload and try again.",true)}});
+$("outRows").addEventListener("click",async e=>{const id=e.target.dataset.del;if(!id||!db)return;
+  if(e.target.dataset.armed!=="1"){e.target.dataset.armed="1";e.target.textContent="Delete?";setTimeout(()=>{if(e.target.isConnected){e.target.dataset.armed="";e.target.textContent="✕"}},4000);return}
+  try{await db.doc("outreach/"+id).delete();toast("Removed")}catch(err){toast("Could not remove that entry.",true)}});
+$("addOut").addEventListener("click",async()=>{
+  const name=$("uName").value.trim();if(!name){toast("Type the person's name first.",true);return}
+  if(!db){toast("Saving is unavailable in this view.",true);return}
+  const doc={name,co:$("uCo").value.trim(),ch:$("uCh").value,addr:$("uAddr").value.trim(),sent:$("uDate").value||today(),st:"waiting",fu1:"",fu2:"",note:"",src:"page"};
+  try{await db.collection("outreach").doc(slug(name)+"-"+Date.now().toString(36)).set(doc);
+    ["uName","uCo","uAddr"].forEach(i=>$(i).value="");$("uDate").value=today();toast("Message logged")}catch(err){toast("Could not log that message.",true)}});
+
+/* shared: role notes in both tabs */
+document.addEventListener("change",async e=>{if(!e.target.classList.contains("roleNote")||!db)return;
+  try{await db.doc("roles/"+e.target.dataset.id).update({note:e.target.value});toast("Note saved")}catch(err){toast("Could not save that note.",true)}});
+
+/* manual adds */
+function slug(s){return String(s).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,120)||"item"}
+async function addRole(f,st){
+  const co=$(f.co).value.trim(), role=$(f.role).value.trim();
+  if(!co||!role){toast("Fill in the company and the role title.",true);return false}
+  if(!db){toast("Saving is unavailable in this view.",true);return false}
+  if(roles.some(r=>norm(r.co)===norm(co)&&norm(r.role)===norm(role))){toast("That role is already in the tracker.",true);return false}
+  const doc={co,role,loc:$(f.loc).value.trim(),sector:$(f.sec).value,link:$(f.link).value.trim(),why:"",found:today(),deadline:f.dl?$(f.dl).value:"",st,applied:st==="applied"?($(f.date).value||today()):"",note:"",jd:f.jd?$(f.jd).value.trim():""};
+  try{await db.collection("roles").doc(slug(co+"-"+role)+"-"+Date.now().toString(36)).set(doc);return true}catch(err){toast("Could not add that role.",true);return false}
+}
+$("addOpen").addEventListener("click",async()=>{if(await addRole({co:"oCo",role:"oRole",loc:"oLoc",link:"oLink",sec:"oSec",dl:"oDl",jd:"oJd"},"new")){["oCo","oRole","oLoc","oLink","oDl","oJd"].forEach(i=>$(i).value="");toast("Role added")}});
+$("addApp").addEventListener("click",async()=>{if(await addRole({co:"aCo",role:"aRole",loc:"aLoc",link:"aLink",sec:"aSec",date:"aDate"},"applied")){["aCo","aRole","aLoc","aLink"].forEach(i=>$(i).value="");$("aDate").value=today();toast("Application logged")}});
+
+
+/* today */
+let days=[], checks=[], sys={}, loadedT={days:false,checks:false};
+const OWE_ORDER={reply:0,intro:1,followup:2};
+const OWE_LBL={reply:"You owe a reply",intro:"Accepted your request: first message ready",followup:"Follow ups"};
+/* prospects, connection requests and templates */
+let prospects=[], tpls=[];
+const WEEK_CAP=90;
+const P_TAG={alum:"Imperial alumnus",biotech:"Biotech background",recruiter:"Recruiter or HR",link:"Shared link",other:"Relevant role"};
+function sentLast7(){const from=addDays(today(),-6);return prospects.filter(p=>p.req_date&&p.req_date>=from).length}
+function renderProspects(){
+  const sug=prospects.filter(p=>p.st==="suggested"||(p.st==="approved")||((p.st==="skipped")&&p.dec_date===today()));
+  const appr=prospects.filter(p=>p.st==="approved").length, pend=prospects.filter(p=>p.st==="requested").length, sent=sentLast7();
+  $("pMeter").innerHTML=`<span>Last 7 days: <b>${sent}</b> of ${WEEK_CAP} requests</span><span class="bar2"><i style="width:${Math.min(100,Math.round(sent/WEEK_CAP*100))}%"></i></span><span>${appr} approved for the next meeting</span><span>${pend} waiting to accept</span>`;
+  const by={};sug.forEach(p=>{(by[p.co]=by[p.co]||[]).push(p)});
+  const cos2=Object.keys(by).sort((a,b)=>String(by[a][0].found||"").localeCompare(String(by[b][0].found||""))||a.localeCompare(b));
+  $("prospectCards").innerHTML=cos2.length?cos2.map(co=>{const list=by[co].sort((a,b)=>String(a.name).localeCompare(String(b.name)));const open=list.some(p=>p.st==="suggested");
+    return `<div class="pgrp"><div class="gh"><span>${esc(co)}</span>${open?`<button class="ghost" data-pall="${esc(co)}">Yes to all</button>`:""}</div>${list.map(p=>{const u=safeUrl(p.li);return `<div class="prow" data-st="${esc(p.st)}">
+      <div><div class="t">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(p.name)}</a>`:esc(p.name)} <span class="tag">${esc(P_TAG[p.tag]||p.tag||"")}</span></div><div class="s">${esc(p.title||"")}${p.why?" · "+esc(p.why):""}</div></div>
+      <div class="seg">${p.st==="suggested"?`<button data-pv="approved" data-pid="${esc(p.id)}">Yes</button><button class="quiet" data-pv="skipped" data-pid="${esc(p.id)}">Skip</button>`:`<span class="pill ${p.st==="approved"?"p-replied":"p-closed"}">${p.st==="approved"?"yes":"skipped"}</span><button class="quiet" data-pv="suggested" data-pid="${esc(p.id)}">Undo</button>`}</div></div>`}).join("")}</div>`}).join("")
+    :`<div class="empty">${prospects.length?"Nobody waiting for a decision. The morning run adds new people each day.":"No suggestions yet. The morning run starts shortlisting people at the companies you watch."}</div>`;
+  /* outreach tab: requests */
+  const req=prospects.filter(p=>["requested","accepted","withdrawn"].includes(p.st)).sort((a,b)=>String(b.req_date||"").localeCompare(String(a.req_date||"")));
+  $("reqPipe").innerHTML=["requested","accepted","withdrawn"].map(s=>`<span class="pill p-${s==="accepted"?"replied":s==="requested"?"waiting":"closed"}">${prospects.filter(p=>p.st===s).length} ${s==="requested"?"pending":s}</span>`).join("");
+  $("reqRows").innerHTML=req.length?req.map(p=>{const u=safeUrl(p.li);return `<tr data-st="${p.st==="accepted"?"replied":p.st==="withdrawn"?"closed":"waiting"}"><td class="n">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(p.name)}</a>`:esc(p.name)}<small>${esc(p.title||"")}</small></td><td>${esc(p.co)}</td><td>${esc(P_TAG[p.tag]||"")}</td><td class="mono">${esc(fmtDate(p.req_date))}</td><td>${p.st==="accepted"?"accepted "+esc(fmtDate(p.acc_date)):p.st==="withdrawn"?"withdrawn":"pending"}</td></tr>`}).join("")
+    :`<tr><td colspan="5" class="auto">No requests sent yet.</td></tr>`;
+}
+$("prospectCards").addEventListener("click",async e=>{if(!db)return;
+  const all=e.target.dataset.pall;
+  if(all){const ids=prospects.filter(p=>p.co===all&&p.st==="suggested").map(p=>p.id);
+    try{await Promise.all(ids.map(id=>db.doc("prospects/"+id).update({st:"approved",dec_date:today()})));toast(`${ids.length} approved`)}catch(err){toast("Could not save that. Reload and try again.",true)}return}
+  const v=e.target.dataset.pv,id=e.target.dataset.pid;if(!v||!id)return;
+  try{await db.doc("prospects/"+id).update({st:v,dec_date:v==="suggested"?"":today()});toast(v==="approved"?"Approved for the next meeting":v==="skipped"?"Skipped":"Undone")}catch(err){toast("Could not save that. Reload and try again.",true)}});
+const TPL_ORDER=["alum","biotech","recruiter","general"];
+function renderTpls(){const box=$("tplBox");if(document.activeElement&&box.contains(document.activeElement))return;
+  const list=[...tpls].sort((a,b)=>TPL_ORDER.indexOf(a.id)-TPL_ORDER.indexOf(b.id));
+  box.innerHTML=list.length?list.map(t=>`<label class="tpl">${esc(t.label||t.id)}<textarea data-tpl="${esc(t.id)}">${esc(t.text||"")}</textarea></label>`).join(""):`<div class="empty">No templates yet.</div>`}
+$("tplBox").addEventListener("change",async e=>{const id=e.target.dataset.tpl;if(!id||!db)return;
+  try{await db.doc("templates/"+id).update({text:e.target.value});toast("Template saved")}catch(err){toast("Could not save the template.",true)}});
+const isClosed=o=>o.st==="closed";
+function personVisible(o){
+  if(!o.owe||isClosed(o))return false;
+  if(o.owed_since&&o.owed_since>today())return false;
+  if(o.snooze&&o.snooze>today())return false;
+  if((o.act==="nottoday"||o.act==="handled"||o.act==="stop")&&o.act_date===today())return false;
+  return true;
+}
+function people(){return outs.filter(personVisible).sort((a,b)=>(OWE_ORDER[a.owe]??2)-(OWE_ORDER[b.owe]??2)||String(a.owed_since||"9").localeCompare(String(b.owed_since||"9")))}
+function todayDoc(){const t=today();return days.find(d=>d.id===t)||days.filter(d=>d.id<=t).sort((a,b)=>b.id.localeCompare(a.id))[0]}
+function openChecks(){return checks.filter(c=>!c.ans||c.ans_date===today())}
+function renderToday(){
+  const d=todayDoc(), ps=people(), oc=openChecks().filter(c=>!c.ans);
+  const appr=outs.filter(o=>o.act==="approved"&&o.owe);
+  const fresh=roles.filter(r=>r.st==="new");
+  $("cToday").textContent=ps.length+oc.length+prospects.filter(p=>p.st==="suggested").length+todos.filter(x=>!x.done).length+debriefs.filter(d=>(d.st||"waiting")==="waiting"&&new Date(d.when)<=new Date()).length;
+  $("cTodaySub").textContent=appr.length?`${appr.length} approved to send`:(ps.length?`${ps.length} people`:"to act on");
+  const dt=new Date();$("dWhen").textContent=dt.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  if(!loadedT.days){return}
+  $("dSum").textContent=d?(d.summary||"")+(d.reading_min?` Reading today: about ${d.reading_min} minutes.`:"")+(d.id!==today()?` (Prepared for ${fmtDate(d.id)}; today's run has not finished yet.)`:""):"Nothing prepared yet. The morning run writes this page before 08:00.";
+  const al=[];(sys.alerts||[]).forEach(a=>al.push(a));
+  $("dAlert").innerHTML=al.length?`<div class="alert">${al.map(esc).join("<br>")}</div>`:"";
+  $("dSend").innerHTML=appr.length?`<div class="sendbar">${appr.length} approved: ${appr.map(o=>esc(o.name)).join(", ")}. Say <b>send</b> in your Claude session and they go out after one confirmation.</div>`:"";
+  /* checks */
+  const cl=openChecks();
+  $("checkRows").innerHTML=loadedT.checks&&cl.length?cl.map(c=>{const u=safeUrl(c.link);return `<div class="row" data-ans="${esc(c.ans||"")}">
+    <div><div class="t">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(c.text)}</a>`:esc(c.text)}</div>${c.why?`<div class="s">${esc(c.why)}</div>`:""}</div>
+    <div class="seg">${[["done","Done"],["notyet","Not yet"],["drop","Dropping it"]].map(([k,l])=>`<button data-chk="${esc(c.id)}" data-ans="${k}" aria-pressed="${c.ans===k}">${l}</button>`).join("")}</div></div>`}).join(""):`<div class="row"><span class="t">${loadedT.checks?"Nothing to confirm. The runs verified everything from your email and calendar.":"Loading."}</span></div>`;
+  /* deadlines and calls */
+  const lim=addDays(today(),14);
+  const dls=roles.filter(r=>r.deadline&&r.deadline>=today()&&r.deadline<=lim&&["shortlisted","applied","interviewing"].includes(r.st)).sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  const calls=(d&&d.id===today()&&d.calls)||[];
+  const rows=[...calls.map(c=>{const u=safeUrl(c.cheat);return `<div class="row"><div><div class="t">${esc(c.time||"")} ${esc(c.title||"")}</div>${c.note?`<div class="s">${esc(c.note)}</div>`:""}</div><div>${u?`<a class="link" href="${esc(u)}" target="_blank" rel="noopener">Cheat sheet</a>`:""}</div></div>`}),
+    ...dls.map(r=>{const u=safeUrl(r.link);return `<div class="row"><div><div class="t">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(r.co)}, ${esc(r.role)}</a>`:`${esc(r.co)}, ${esc(r.role)}`}</div><div class="s">${esc(r.st)}</div></div><span class="tag dl">${r.deadline===today()?"today":"closes "+esc(fmtDate(r.deadline))}</span></div>`})];
+  $("dayRows").innerHTML=rows.length?rows.join(""):`<div class="row"><span class="t">No calls today and no deadlines in the next 14 days.</span></div>`;
+  /* people */
+  if(!loaded.outs){return}
+  let grp="";
+  $("peopleCards").innerHTML=ps.length?ps.map(o=>{const u=safeUrl(o.addr);const g=o.owe!==grp?(grp=o.owe,`<div class="grp">${esc(OWE_LBL[o.owe]||"Follow ups")}</div>`):"";
+    const dd=o.owed_since?Math.max(0,Math.round((new Date(today())-new Date(o.owed_since))/864e5)):null;
+    return g+`<article class="person" data-owe="${esc(o.owe)}" data-act="${esc(o.act||"")}">
+    <div class="hd"><span class="nm">${esc(o.name)}</span><span class="tag">${o.ch==="email"?"Email":"LinkedIn"}</span>${dd!==null?`<span class="tag ${dd>=7?"dl":""}">${dd} day${dd===1?"":"s"}</span>`:""}<span class="meta">${esc(o.co)}</span>
+      ${u?`<a class="link" href="${esc(u)}" target="_blank" rel="noopener">profile</a>`:""}${o.thread?`<a class="link" href="https://mail.google.com/mail/u/0/#all/${encodeURIComponent(o.thread)}" target="_blank" rel="noopener">thread</a>`:""}</div>
+    ${o.ctx?`<div class="ctx">${esc(o.ctx)}</div>`:""}
+    <textarea class="pDraft" data-id="${esc(o.id)}" aria-label="Draft message to ${esc(o.name)}" placeholder="No draft yet. Write one here, or leave it and handle this yourself.">${esc(o.draft||"")}</textarea>
+    <div class="acts">${o.act==="approved"?`<span class="pill p-replied">approved</span><button class="quiet" data-pa="clear" data-id="${esc(o.id)}">Unapprove</button>`:`<button data-pa="approved" data-id="${esc(o.id)}">Approve</button>`}
+      <button class="ghost" data-pa="handled" data-id="${esc(o.id)}">I handled it</button>
+      <button class="ghost" data-pa="nottoday" data-id="${esc(o.id)}">Not today</button>
+      <input type="date" class="pSnooze" data-id="${esc(o.id)}" min="${addDays(today(),1)}" aria-label="Snooze ${esc(o.name)} until">
+      <button class="quiet" data-pa="stop" data-id="${esc(o.id)}">Stop chasing</button>
+      <button class="ed-b" data-edit="outreach" data-eid="${esc(o.id)}">Edit details</button></div>
+  </article>`}).join(""):`<div class="empty">Nobody is owed anything today.</div>`;
+  /* roles to decide */
+  if(!loaded.roles){return}
+  const dec=fresh.sort((a,b)=>String(a.deadline||"9999").localeCompare(String(b.deadline||"9999"))||String(b.found||"").localeCompare(String(a.found||"")));
+  $("decideCards").innerHTML=dec.length?dec.map(r=>{const u=safeUrl(r.link);return `<article class="card"><div><div class="co">${esc(r.co)}</div><div class="title">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(r.role)}</a>`:esc(r.role)}</div><div class="meta"><span>${esc(r.loc||"")}</span></div></div>
+    <div class="side">${r.deadline?`<span class="tag dl">closes ${esc(fmtDate(r.deadline))}</span>`:""}<button data-act2="shortlisted" data-id="${esc(r.id)}">Shortlist</button><button class="quiet" data-act2="discarded" data-id="${esc(r.id)}">Discard</button>${rsBtn(r)}<button class="ed-b" data-edit="roles" data-eid="${esc(r.id)}">Edit</button></div></article>`}).join(""):`<div class="empty">No new roles to decide on.</div>`;
+  fillRs();
+}
+$("checkRows").addEventListener("click",async e=>{const id=e.target.dataset.chk;if(!id||!db)return;const c=checks.find(x=>x.id===id);const a=e.target.dataset.ans;
+  try{await db.doc("checks/"+id).update({ans:c&&c.ans===a?"":a,ans_date:today()});}catch(err){toast("Could not save that. Reload and try again.",true)}});
+$("peopleCards").addEventListener("click",async e=>{const pa=e.target.dataset.pa,id=e.target.dataset.id;if(!pa||!id||!db)return;
+  const patch=pa==="clear"?{act:"",act_date:""}:{act:pa,act_date:today()};
+  if(pa==="approved"){const ta=document.querySelector(`.pDraft[data-id="${CSS.escape(id)}"]`);if(!ta||!ta.value.trim()){toast("Write the message before approving it.",true);return}patch.draft=ta.value}
+  try{await db.doc("outreach/"+id).update(patch);toast({approved:"Approved. Say send in your session.",handled:"Marked handled",nottoday:"Back tomorrow",stop:"Stopped chasing",clear:"Unapproved"}[pa])}catch(err){toast("Could not save that. Reload and try again.",true)}});
+$("peopleCards").addEventListener("change",async e=>{const id=e.target.dataset.id;if(!id||!db)return;
+  try{if(e.target.classList.contains("pDraft")){const o=outs.find(x=>x.id===id);const patch={draft:e.target.value};if(o&&o.act==="approved")patch.act="";await db.doc("outreach/"+id).update(patch);toast(o&&o.act==="approved"?"Draft saved. Approve it again to send.":"Draft saved")}
+    else if(e.target.classList.contains("pSnooze")&&e.target.value){await db.doc("outreach/"+id).update({snooze:e.target.value,act:"snooze",act_date:today()});toast("Snoozed until "+fmtDate(e.target.value))}}
+  catch(err){toast("Could not save that. Reload and try again.",true)}});
+$("decideCards").addEventListener("click",async e=>{const act=e.target.dataset.act2,id=e.target.dataset.id;if(!act||!id||!db)return;
+  try{await db.doc("roles/"+id).update({st:act});toast(act==="shortlisted"?"Shortlisted. Time goes on your calendar tonight.":"Discarded")}catch(err){toast("Could not save that change.",true)}});
+
+
+/* notes */
+let notes=[], nFilter="all", nEditing=null;
+const NOTE_LBL={new:"not read yet",done:"done",ask:"question for your morning meeting",dismissed:"no action needed"};
+const TAB_LBL={today:"Today",companies:"Companies",open:"Open roles",applied:"Applied",outreach:"Outreach"};
+function renderNotes(){
+  const asks=notes.filter(n=>n.st==="ask").length;$("noteBadge").hidden=!asks;$("noteBadge").textContent=asks;
+  if($("notePanel").hidden&&nEditing===null){/* still render so it is ready */}
+  const list=notes.filter(n=>nFilter==="all"||(n.st||"new")===nFilter).sort((a,b)=>String(b.at||"").localeCompare(String(a.at||"")));
+  $("noteRows").innerHTML=list.length?list.map(n=>{const when=String(n.at||"");const d=new Date(when);
+    const stamp=isNaN(d)?"":d.toLocaleDateString("en-GB",{day:"numeric",month:"short"})+" "+d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+    const body=nEditing===n.id?`<textarea data-ntext="${esc(n.id)}" aria-label="Edit note">${esc(n.text)}</textarea><div class="eb"><button data-nsave="${esc(n.id)}">Save</button><button class="quiet" data-ncancel="1">Cancel</button></div>`
+      :`<div class="t">${esc(n.text)}</div>`;
+    return `<div class="note" data-st="${esc(n.st||"new")}"><div>${body}
+    <div class="r">${esc(stamp)}${n.tab&&TAB_LBL[n.tab]?" · "+esc(TAB_LBL[n.tab]):""} · ${esc(NOTE_LBL[n.st||"new"]||n.st)}${n.reply?": "+esc(n.reply):""}</div></div>
+    <div class="acts">${nEditing===n.id?"":`<button class="ed-b" data-nedit="${esc(n.id)}" aria-label="Edit note">Edit</button>`}<button class="x" data-ndel="${esc(n.id)}" aria-label="Delete note">✕</button></div></div>`}).join("")
+    :`<div class="note"><div class="r">${notes.length?"No notes in this view.":"No notes yet."}</div></div>`;
+}
+async function addNote(){const v=$("noteIn").value.trim();if(!v||!db)return;
+  try{await db.collection("notes").doc("n"+Date.now().toString(36)).set({text:v,at:new Date().toISOString(),st:"new",reply:"",tab:(TABS.find(t=>!$(t).hidden)||"")});$("noteIn").value="";toast("Noted")}catch(e){toast("Could not save that note.",true)}}
+$("noteAdd").addEventListener("click",addNote);
+function notePanel(open){$("notePanel").hidden=!open;$("noteFab").hidden=open;$("noteFab").setAttribute("aria-expanded",String(open));if(open)setTimeout(()=>$("noteIn").focus(),30);else $("noteFab").focus()}
+$("noteFab").addEventListener("click",()=>notePanel(true));
+$("noteClose").addEventListener("click",()=>notePanel(false));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("notePanel").hidden&&!$("edDlg").open)notePanel(false)});
+$("noteIn").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();addNote()}});
+$("noteFilter").addEventListener("click",e=>{const f=e.target.dataset.nf;if(!f)return;nFilter=f;
+  $("noteFilter").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.nf===f)));renderNotes()});
+$("noteRows").addEventListener("click",async e=>{const t=e.target;
+  if(t.dataset.nedit){nEditing=t.dataset.nedit;renderNotes();const ta=$("noteRows").querySelector("textarea");if(ta){ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)}return}
+  if(t.dataset.ncancel){nEditing=null;renderNotes();return}
+  if(t.dataset.nsave){const id=t.dataset.nsave;const ta=$("noteRows").querySelector(`textarea[data-ntext="${CSS.escape(id)}"]`);const v=ta?ta.value.trim():"";
+    if(!v){toast("A note can't be empty. Delete it instead.",true);return}
+    const n=notes.find(x=>x.id===id);const changed=n&&n.text!==v;
+    try{await db.doc("notes/"+id).update(changed?{text:v,st:"new",reply:"",edited:new Date().toISOString()}:{text:v});nEditing=null;renderNotes();toast(changed?"Saved. Tonight's sweep will read it again.":"Saved")}catch(err){toast("Could not save that note.",true)}return}
+  const id=t.dataset.ndel;if(!id||!db)return;
+  if(t.dataset.armed!=="1"){t.dataset.armed="1";t.textContent="Delete?";setTimeout(()=>{if(t.isConnected){t.dataset.armed="";t.textContent="✕"}},4000);return}
+  try{await db.doc("notes/"+id).delete();toast("Note deleted")}catch(err){toast("Could not delete that note.",true)}});
+/* debriefs */
+let debriefs=[];
+function renderDebriefs(){
+  const cut=addDays(today(),-4), now=new Date();
+  const list=debriefs.filter(d=>{const w=new Date(d.when||"");return !isNaN(w)&&w<=now&&String(d.when).slice(0,10)>=cut&&d.st!=="used"||(d.st==="used"&&String(d.used_at||"").slice(0,10)===today())})
+    .sort((a,b)=>String(a.when).localeCompare(String(b.when)));
+  $("debriefWrap").hidden=!list.length;
+  $("debriefCards").innerHTML=list.map(d=>{const w=new Date(d.when);const stamp=w.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})+", "+w.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+    const status=d.st==="used"?"Thank you draft written on their card.":d.st==="saved"?"Saved. The thank you draft is written tonight.":"Waiting for your key points.";
+    return `<article class="debrief" data-st="${esc(d.st||"waiting")}"><div class="hd" style="display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline"><span style="font-weight:600;font-size:17px">${esc(d.name)}</span><span class="meta">${esc(d.co||"")}</span><span class="tag">${esc(stamp)}</span></div>
+      <textarea class="dbText" data-id="${esc(d.id)}" placeholder="What you discussed, what they advised, anything you promised to send, anyone they suggested you contact" aria-label="Key points from your call with ${esc(d.name)}">${esc(d.points||"")}</textarea>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button data-dbsave="${esc(d.id)}">Save key points</button><span class="meta">${esc(status)}</span></div></article>`}).join("");
+}
+$("debriefCards").addEventListener("click",async e=>{const id=e.target.dataset.dbsave;if(!id||!db)return;
+  const ta=document.querySelector(`.dbText[data-id="${CSS.escape(id)}"]`);const v=ta?ta.value.trim():"";if(!v){toast("Add a line or two first.",true);return}
+  try{await db.doc("debriefs/"+id).update({points:v,st:"saved",saved_at:new Date().toISOString()});toast("Saved. Tonight's sweep drafts the thank you.")}catch(err){toast("Could not save. Reload and try again.",true)}});
+/* to do */
+let todos=[], tdEditing=null;
+const TD_SRC={note:"your note",email:"email",meeting:"morning meeting",run:"the sweep",you:""};
+function renderTodos(){
+  const t=today();
+  const list=todos.filter(x=>!x.done||x.done_date===t).sort((a,b)=>(a.done?1:0)-(b.done?1:0)||String(a.due||"9999").localeCompare(String(b.due||"9999"))||String(a.at||"").localeCompare(String(b.at||"")));
+  $("todoRows").innerHTML=list.length?list.map(x=>{const over=x.due&&x.due<t&&!x.done;const src=TD_SRC[x.src]??"";
+    const meta=[x.due?(over?"overdue, was due ":"due ")+fmtDate(x.due):"",src?"from "+src:"",x.why||""].filter(Boolean).join(" · ");
+    const body=tdEditing===x.id?`<div class="ef"><input type="text" data-tdtext="${esc(x.id)}" value="${esc(x.text)}" aria-label="Edit to do"><input type="date" data-tddue="${esc(x.id)}" value="${esc(x.due||"")}" aria-label="Due date"><button data-tdsave="${esc(x.id)}">Save</button><button class="quiet" data-tdcancel="1">Cancel</button></div>`
+      :`<span class="t">${esc(x.text)}</span>${meta?`<span class="s${over?" over":""}">${esc(meta)}</span>`:""}`;
+    return `<div class="todo" data-done="${x.done?1:0}"><input type="checkbox" data-td="${esc(x.id)}" ${x.done?"checked":""} aria-label="Done: ${esc(x.text)}"><div>${body}</div>
+      <div class="acts">${tdEditing===x.id?"":`<button class="ed-b" data-tdedit="${esc(x.id)}">Edit</button>`}<button class="x" data-tddel="${esc(x.id)}" aria-label="Delete to do">✕</button></div></div>`}).join("")
+    :`<div class="row"><span class="t">Nothing on your to do list.</span></div>`;
+}
+$("todoRows").addEventListener("change",async e=>{const id=e.target.dataset.td;if(!id||!db)return;
+  try{await db.doc("todos/"+id).update({done:e.target.checked,done_date:e.target.checked?today():""})}catch(err){toast("Could not save that.",true)}});
+$("todoRows").addEventListener("click",async e=>{const t=e.target;
+  if(t.dataset.tdedit){tdEditing=t.dataset.tdedit;renderTodos();const i=$("todoRows").querySelector("input[type=text]");if(i)i.focus();return}
+  if(t.dataset.tdcancel){tdEditing=null;renderTodos();return}
+  if(t.dataset.tdsave){const id=t.dataset.tdsave;const v=$("todoRows").querySelector(`[data-tdtext="${CSS.escape(id)}"]`).value.trim();const d=$("todoRows").querySelector(`[data-tddue="${CSS.escape(id)}"]`).value;
+    if(!v){toast("A to do can't be empty. Delete it instead.",true);return}
+    try{await db.doc("todos/"+id).update({text:v,due:d||""});tdEditing=null;renderTodos();toast("Saved")}catch(err){toast("Could not save that.",true)}return}
+  const id=t.dataset.tddel;if(!id||!db)return;
+  if(t.dataset.armed!=="1"){t.dataset.armed="1";t.textContent="Delete?";setTimeout(()=>{if(t.isConnected){t.dataset.armed="";t.textContent="✕"}},4000);return}
+  try{await db.doc("todos/"+id).delete();toast("Deleted")}catch(err){toast("Could not delete that.",true)}});
+async function addTodo(){const v=$("tdText").value.trim();if(!v||!db)return;
+  try{await db.collection("todos").doc("t"+Date.now().toString(36)).set({text:v,due:$("tdDue").value||"",done:false,done_date:"",src:"you",why:"",at:new Date().toISOString()});$("tdText").value="";$("tdDue").value="";toast("Added")}catch(err){toast("Could not add that.",true)}}
+$("tdAdd").addEventListener("click",addTodo);
+$("tdText").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addTodo()}});
+/* edit dialog */
+const ED={
+  companies:{label:"company",title:d=>d.name,fields:[["name","Company"],["sector","Sector","sector"],["region","Region"],["about","What they do","area"],["web","Website"],["url","Careers page or feed URL (what the daily check reads)"]]},
+  roles:{label:"role",title:d=>`${d.co}, ${d.role}`,fields:[["co","Company"],["role","Role title"],["loc","Location"],["sector","Sector","sector"],["link","Posting URL"],["deadline","Closing date","date"],["applied","Date applied","date"],["why","Why it fits","area"],["jd","Job description (Tailor resume fills it in)","area"]]},
+  outreach:{label:"person",title:d=>d.name,fields:[["name","Name"],["co","Company and their role"],["ch","Channel","ch"],["addr","Email address or LinkedIn URL"],["sent","First message sent","date"],["ctx","Context line on Today","area"]]}
+};
+let edCur=null;
+function edOpen(col,id){
+  const src={companies:cos,roles:roles,outreach:outs}[col];const d=src.find(x=>x.id===id);if(!d||!db)return;
+  edCur={col,id};const cfg=ED[col];
+  $("edTitle").textContent="Edit "+cfg.label+": "+cfg.title(d);
+  $("edFields").innerHTML=cfg.fields.map(([k,l,t])=>{const v=esc(d[k]??"");let input;
+    if(t==="sector")input=`<select name="${k}">${["",...SECTORS].map(o=>`<option ${o===d[k]?"selected":""} value="${esc(o)}">${esc(o||"None")}</option>`).join("")}</select>`;
+    else if(t==="ch")input=`<select name="${k}"><option value="linkedin" ${d[k]!=="email"?"selected":""}>LinkedIn</option><option value="email" ${d[k]==="email"?"selected":""}>Email</option></select>`;
+    else if(t==="date")input=`<input type="date" name="${k}" value="${v}">`;
+    else if(t==="area")input=`<textarea name="${k}">${v}</textarea>`;
+    else input=`<input name="${k}" value="${v}">`;
+    return `<label>${esc(l)}${input}</label>`}).join("");
+  $("edDlg").showModal();
+}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-edit]");if(!b)return;e.preventDefault();edOpen(b.dataset.edit,b.dataset.eid)});
+$("edCancel").addEventListener("click",()=>$("edDlg").close());
+$("edForm").addEventListener("submit",async e=>{e.preventDefault();if(!edCur||!db)return;
+  const patch={};ED[edCur.col].fields.forEach(([k])=>{const el=$("edForm").elements[k];if(el)patch[k]=el.value.trim()});
+  if(edCur.col==="companies"&&!patch.name){toast("The company needs a name.",true);return}
+  if(edCur.col==="roles"&&(!patch.co||!patch.role)){toast("Fill in the company and the role title.",true);return}
+  if(edCur.col==="outreach"&&!patch.name){toast("The person needs a name.",true);return}
+  try{await db.doc(edCur.col+"/"+edCur.id).update(patch);$("edDlg").close();toast("Saved")}catch(err){toast("Could not save. Reload and try again.",true)}});
+function renderAll(){maybeStartDeck();renderProspects();renderTpls();renderCounts();renderCos();renderOpen();renderApplied();renderOut();renderToday();renderNotes();renderDebriefs();renderTodos()}
+/* ===== voice-first deck ===== */
+const BOOT_HASH=(location.hash||"").slice(1);
+let editMode=false;
+let deck=[], deckPos=0, deckBuilt=false, deckBusy=false, smp=null, mcpNs=null, pendingMove=null;
+(async()=>{try{smp=await claude.use("sample")}catch(e){smp=null}})();
+(async()=>{try{mcpNs=await claude.use("mcp")}catch(e){mcpNs=null}})();
+const tomorrow=()=>addDays(today(),1);
+const skipKey=()=>"rr-skip-"+today();
+function skipped(){try{return new Set(JSON.parse(localStorage.getItem(skipKey())||"[]"))}catch(e){return new Set()}}
+function markSkip(k){try{const s=skipped();s.add(k);localStorage.setItem(skipKey(),JSON.stringify([...s]))}catch(e){}}
+const KIND_LBL={confirm:"Check this",deadline:"Deadline",debrief:"Debrief",task:"Did it happen?",reply:"Message",connect:"Connect",role:"Role to decide"};
+const OPTS={
+  deadline:[["done","Done","done, yes"],["notyet","Not yet","not yet, no"],["drop","Drop it","drop"],["edit","Edit card","edit"]],
+  debrief:[["skip","Later","later, skip"],["edit","Edit card","edit"]],
+  task:[["yes","Yes","yes, done"],["notyet","Not yet","no, not yet"],["drop","Drop it","drop"],["edit","Edit card","edit"]],
+  reply:[["approve","Approve","yes, send, approve"],["skip","Not today","skip, next"],["stop","Stop chasing","stop"],["edit","Edit card","edit"]],
+  connect:[["yes","Yes","yes, connect"],["skip","Skip","no, skip"],["edit","Edit card","edit"]],
+  role:[["shortlist","Shortlist","yes, shortlist"],["discard","Discard","no, discard"],["later","Later","skip, later"],["edit","Edit card","edit"]],
+  confirm:[["yes","Apply","yes"],["no","Cancel","no, cancel"]]
+};
+const WORDS={yes:["yes","yeah","yep","yup","done","did it","it happened","approve","approved","send","send it","shortlist","connect","applied","go","ok","okay","sure","apply","correct"],
+  no:["no","nope","not yet","nah","no not yet","cancel"],
+  drop:["drop","drop it","dropping it","discard","remove","delete","stop","stop chasing","never"],
+  skip:["skip","next","later","not today","pass","on it","keep"],
+  back:["back","go back","previous","undo"],edit:["edit","edit card","edit this","edit this card","change this card","fix this card","thats wrong","that's wrong","wrong"]};
+function wordClass(t){const s=t.toLowerCase().replace(/'/g,"").replace(/[^a-z ]/g," ").replace(/\s+/g," ").trim();for(const [k,arr] of Object.entries(WORDS))if(arr.includes(s))return k;return null}
+const MAP={deadline:{yes:"done",skip:"notyet",no:"notyet",drop:"drop",edit:"edit"},task:{yes:"yes",no:"notyet",drop:"drop",skip:"skip",edit:"edit"},reply:{yes:"approve",skip:"skip",no:"skip",drop:"stop",edit:"edit"},
+  connect:{yes:"yes",no:"skip",skip:"skip",drop:"skip",edit:"edit"},role:{yes:"shortlist",no:"discard",drop:"discard",skip:"later",edit:"edit"},debrief:{skip:"skip",no:"skip",edit:"edit"},confirm:{yes:"yes",no:"no",drop:"no",skip:"no"}};
+function lastNote(o){const n=String(o.note||"").trim().split("\n").filter(Boolean);return n.at(-1)||""}
+function buildDeck(){return buildDeckRaw(skipped())}
+function buildDeckRaw(skp){
+  const sk=skp||new Set(), t=today(), lim7=addDays(t,7), lim3=addDays(t,3), cards=[];
+  const add=c=>{if(!sk.has(c.kind+":"+c.id))cards.push(c)};
+  roles.filter(r=>r.deadline&&r.deadline>=t&&((["shortlisted","interviewing","applied"].includes(r.st)&&r.deadline<=lim7)||(r.st==="new"&&r.deadline<=lim3)))
+    .sort((a,b)=>a.deadline.localeCompare(b.deadline)).forEach(r=>{const d=Math.round((new Date(r.deadline)-new Date(t))/864e5);
+      add({kind:"deadline",id:r.id,title:`${r.co}, ${r.role}`,sub:(d===0?"Closes today":d===1?"Closes tomorrow":`Closes in ${d} days, ${fmtDate(r.deadline)}`)+` · ${r.st}`,body:r.why||"",link:r.link})});
+  debriefs.filter(d=>(d.st||"waiting")==="waiting"&&d.when&&new Date(d.when)<=new Date()).sort((a,b)=>String(b.when).localeCompare(String(a.when)))
+    .forEach(d=>add({kind:"debrief",id:d.id,title:`How did the call with ${d.name} go?`,sub:`${d.co||""}${d.co?" · ":""}${fmtDate(String(d.when).slice(0,10))}`,body:"Say what you talked about, anything you promised, and anyone they suggested you contact. I'll file it on their card, add any to dos and draft the thank you."}));
+  const tasks=[...checks.filter(c=>!c.ans).map(c=>({kind:"task",id:"c/"+c.id,title:c.text,sub:c.why||"",link:c.link,ord:c.date||t})),
+    ...todos.filter(x=>!x.done&&(!x.due||x.due<=t)).map(x=>({kind:"task",id:"t/"+x.id,title:x.text,sub:x.due?(x.due<t?`Overdue since ${fmtDate(x.due)}`:"Due today"):"To do, no date",body:x.why||"",ord:x.due||"9999"}))];
+  tasks.sort((a,b)=>String(a.ord).localeCompare(String(b.ord))).forEach(add);
+  people().filter(o=>o.act!=="approved").forEach(o=>add({kind:"reply",id:o.id,title:o.name,sub:`${o.co||""} · ${(o.draft_ch||o.ch)==="email"?"Email":"LinkedIn"} · ${OWE_LBL[o.owe]||""}`,body:o.ctx||"",last:lastNote(o),draft:o.draft||""}));
+  prospects.filter(p=>p.st==="suggested").forEach(p=>add({kind:"connect",id:p.id,title:p.name,sub:`${p.title||""} · ${p.co}`,body:p.why||"",link:p.li}));
+  roles.filter(r=>r.st==="new").sort((a,b)=>String(a.deadline||"9999").localeCompare(String(b.deadline||"9999"))).forEach(r=>add({kind:"role",id:r.id,title:`${r.co}, ${r.role}`,sub:`${r.loc||""}${r.deadline?" · closes "+fmtDate(r.deadline):""}`,body:r.why||"",link:r.link}));
+  return cards;
+}
+function buildCardFor(c){const all=buildDeckRaw();return all.find(x=>x.kind===c.kind&&x.id===c.id)||null}
+function startDeck(kindFirst){deck=buildDeck();if(kindFirst){const f=deck.filter(c=>c.kind===kindFirst);deck=[...f,...deck.filter(c=>c.kind!==kindFirst)]}deckPos=0;deckBuilt=true;renderDeck()}
+function curCard(){return pendingMove?pendingMove.card:deck.at(deckPos)}
+function renderDeck(){
+  const box=$("deckStack");if(!box)return;const c=curCard();
+  const counts={};deck.slice(deckPos).forEach(x=>counts[x.kind]=(counts[x.kind]||0)+1);
+  $("deckCounts").innerHTML=Object.entries(counts).map(([k,n])=>`<span class="tag">${n} ${esc(KIND_LBL[k]||k)}</span>`).join("")||"";
+  if(!c){box.innerHTML=`<article class="fcard done"><div class="fk">All clear</div><div class="ft">Nothing left for today.</div><div class="fs">Say a command any time: "track AstraZeneca", "call with Fadi moved to 5:30", "remind me to renew my insurance on Friday".</div><div class="fo"><button data-dk="restart" class="ghost">Run through again</button></div></article>`;setVoiceHint(null);return}
+  const opts=OPTS[c.kind]||[];const u=safeUrl(c.link);
+  box.innerHTML=`<div class="ghost2"></div><div class="ghost1"></div><article class="fcard" id="fc" data-kind="${esc(c.kind)}">
+    <div class="fk">${esc(KIND_LBL[c.kind]||"")}${pendingMove?"":` · ${deckPos+1} of ${deck.length}`}</div>
+    <div class="ft">${u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(c.title)}</a>`:esc(c.title)}</div>
+    ${c.sub?`<div class="fs">${esc(c.sub)}</div>`:""}
+    ${c.last?`<div class="fl">Last: ${esc(c.last)}</div>`:""}
+    ${c.body?`<div class="fb">${esc(c.body)}</div>`:""}
+    ${c.kind==="reply"?`<div class="fd" id="fDraft">${esc(c.draft||"No draft yet. Say what you want to tell them.")}</div>`:""}
+    <div class="fo">${opts.map(([k,l],i)=>`<button data-dk="${k}" class="${i?"ghost":""}"><kbd>${i+1}</kbd> ${esc(l)}</button>`).join("")}${pendingMove?"":`<button class="quiet" data-dk="back" ${deckPos?"":"disabled"}>Back</button>`}</div>
+  </article>`;
+  setVoiceHint(c);
+}
+function setVoiceHint(c){const h=$("vHint");if(!h)return;
+  if(!c){h.textContent='Say a command: "track GSK", "call with Fadi moved to 17:30", "remind me to…"';return}
+  const o=(OPTS[c.kind]||[]).map(x=>`"${x[2].split(",")[0]}"`).join(", ");
+  if(editMode){h.textContent="Edit mode: say what is wrong or what this card should say";$("vIn").focus({preventScroll:true});return}
+  h.textContent=c.kind==="debrief"?"Speak your debrief, or say \"later\"":c.kind==="reply"?`Say ${o}, or say how to change the message`:`Say ${o}, or "back"`;
+  if(matchMedia("(pointer:fine)").matches&&!$("today").hidden&&document.activeElement!==$("noteIn"))$("vIn").focus({preventScroll:true});}
+function swipe(dir){editMode=false;const el=$("fc");if(el){el.classList.add(dir==="l"?"outl":"outr")}setTimeout(()=>{deckPos++;renderDeck()},180)}
+async function act(c,choice){
+  if(!db||!c)return;
+  try{
+    if(c.kind==="confirm"){if(choice==="yes"){await applyMove(c.move)}else toast("Left the call as it was");pendingMove=null;renderDeck();return}
+    if(choice==="back"){deckPos=Math.max(0,deckPos-1);renderDeck();return}
+    if(choice==="edit"){editMode=true;setVoiceHint(c);return}
+    if((choice==="skip"&&c.kind!=="reply")||choice==="later"||(c.kind==="deadline"&&choice==="notyet")){markSkip(c.kind+":"+c.id);if(c.kind==="deadline")toast("Kept. Back tomorrow");swipe("l");return}
+    if(c.kind==="deadline"){const r=roles.find(x=>x.id===c.id)||{};const line=(w)=>((r.note||"")+`\n${today()}: ${w} (deadline ${r.deadline})`).trim();
+      if(choice==="done"){if(["new","shortlisted"].includes(r.st))await db.doc("roles/"+c.id).update({st:"applied",applied:today(),note:line("done")});
+        else await db.doc("roles/"+c.id).update({deadline:"",deadline_done:r.deadline,note:line("done")});toast("Done and cleared")}
+      if(choice==="drop"){if(["new","shortlisted"].includes(r.st))await db.doc("roles/"+c.id).update({st:"discarded",note:line("dropped, not done")});
+        else await db.doc("roles/"+c.id).update({deadline:"",deadline_dropped:r.deadline,note:line("dropped, not done")});toast("Dropped, marked not done")}}
+    if(c.kind==="task"){const [t,id]=c.id.split("/");
+      if(t==="c")await db.doc("checks/"+id).update({ans:choice==="yes"?"done":choice==="notyet"?"notyet":"drop",ans_date:today()});
+      else{if(choice==="yes")await db.doc("todos/"+id).update({done:true,done_date:today()});
+        else if(choice==="notyet")await db.doc("todos/"+id).update({due:tomorrow()});
+        else await db.doc("todos/"+id).update({done:true,done_date:today(),dropped:true});}
+      toast(choice==="yes"?"Done":choice==="notyet"?"Back tomorrow":"Dropped")}
+    if(c.kind==="reply"){const o=outs.find(x=>x.id===c.id);
+      if(choice==="approve"){const d=c.draft||(o&&o.draft)||"";if(!d.trim()){toast("Say what the message should say first.",true);return}
+        await db.doc("outreach/"+c.id).update({act:"approved",act_date:today(),draft:d});toast("Approved. It goes in your next session")}
+      if(choice==="skip"){await db.doc("outreach/"+c.id).update({act:"nottoday",act_date:today()});toast("Back tomorrow")}
+      if(choice==="stop"){await db.doc("outreach/"+c.id).update({act:"stop",act_date:today()});toast("Stopped chasing")}}
+    if(c.kind==="connect"){await db.doc("prospects/"+c.id).update({st:choice==="yes"?"approved":"skipped",dec_date:today()});toast(choice==="yes"?"Approved for the next meeting":"Skipped")}
+    if(c.kind==="role"){await db.doc("roles/"+c.id).update({st:choice==="shortlist"?"shortlisted":"discarded"});toast(choice==="shortlist"?"Shortlisted":"Discarded")}
+    swipe(choice==="drop"||choice==="discard"||choice==="stop"||choice==="skip"?"l":"r");
+  }catch(err){toast("Could not save that. Try again.",true)}
+}
+$("deckStack").addEventListener("click",e=>{const b=e.target.closest("[data-dk]");if(!b)return;const k=b.dataset.dk;
+  if(k==="restart"){startDeck();return}act(curCard(),k)});
+document.addEventListener("keydown",e=>{if($("today").hidden||e.target.closest("input,textarea,select,dialog"))return;const c=curCard();if(!c)return;
+  const n=Number(e.key);const o=OPTS[c.kind]||[];if(n>=1&&n<=o.length){e.preventDefault();act(c,o.at(n-1)[0])}
+  else if(e.key==="ArrowLeft"){e.preventDefault();act(c,"back")}else if(e.key==="ArrowRight"){e.preventDefault();act(c,o.find(x=>["keep","skip","later"].includes(x[0]))?.[0]||"skip")}});
+/* voice bar */
+let vLast=0,vPasted=false,vT=null;
+$("vIn").addEventListener("input",e=>{const v=e.target.value;if(v.length-vLast>3)vPasted=true;vLast=v.length;clearTimeout(vT);
+  if(!v.trim()){vPasted=false;return}const kw=!!wordClass(v);vT=setTimeout(()=>{if(vPasted||kw)voiceSubmit()},kw?700:1800)});
+$("vIn").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();clearTimeout(vT);voiceSubmit();return}
+  if(!e.target.value&&/^[1-9]$/.test(e.key)&&!$("today").hidden){const c=curCard(),o=OPTS[c&&c.kind]||[],n=Number(e.key);if(c&&n<=o.length){e.preventDefault();act(c,o.at(n-1)[0])}}});
+$("vGo").addEventListener("click",voiceSubmit);
+
+$("vFab").addEventListener("click",()=>{$("vBar").classList.add("open");$("vIn").focus()});
+async function voiceSubmit(){
+  const inp=$("vIn"), raw=inp.value.trim();clearTimeout(vT);vPasted=false;vLast=0;if(!raw||deckBusy)return;
+  inp.value="";const c=$("today").hidden?null:curCard();
+  const tr=raw.match(/^(?:track|add company|add companies|watch)\s+(.+)$/i);
+  if(tr){await trackNames(tr[1]);return}
+  if(editMode&&c){await freeForm(raw,c,true);return}
+  const w=wordClass(raw);
+  if(c&&w){const m=w==="back"?"back":(MAP[c.kind]||{})[w];if(m){act(c,m);return}}
+  await freeForm(raw,c);
+}
+async function trackNames(s){const names=s.split(/,|\band\b|&/i).map(x=>x.trim().replace(/[.]$/,"")).filter(Boolean);let added=[],dups=[];
+  for(const n of names){const d=cos.find(c=>norm(c.name)===norm(n)||norm(c.input)===norm(n));if(d){dups.push(d.name);continue}$("qkIn").value=n;await quickAdd();added.push(n)}
+  toast((added.length?`Tracking ${added.join(", ")}`:"")+(dups.length?`${added.length?". ":""}Already on your list: ${dups.join(", ")}`:""),!added.length)}
+function nowLocal(){return new Date(Date.now()+4*36e5).toISOString().slice(0,16).replace("T"," ")}
+function callsContext(){const t=today(),out=[];debriefs.forEach(d=>{if(d.when&&String(d.when).slice(0,10)>=addDays(t,-1))out.push(`${d.name} (${d.co||""}) at ${d.when}`)});
+  days.filter(d=>d.id>=t&&d.id<=addDays(t,3)).forEach(d=>(d.calls||[]).forEach(x=>out.push(`${d.id} ${x.time||""} ${x.title||""}`)));return out.join("\n")||"none recorded"}
+const RULES=`Write as Tim Hancer: short, plain, specific. British spelling. No em dashes. Never use "genuinely", "thrilled", "unpack", "deep dive", "excited". No "not just X but Y", no rhetorical questions, no stock closers like "I look forward to hearing from you". LinkedIn messages under 600 characters ending "Best,\\nTim". Emails end "Kind regards,\\nTim Hancer". Never invent facts.`;
+const EDITABLE={deadline:["co","role","deadline","loc","why"],role:["co","role","deadline","loc","why"],task_c:["text","why","date"],task_t:["text","due","why"],reply:["name","co","ctx","addr","ch"],connect:["name","title","co","loc","why"],debrief:["name","co","when"]};
+function editTarget(c){if(c.kind==="task"){const [t,id]=c.id.split("/");return t==="c"?{col:"checks",id,keys:EDITABLE.task_c,doc:checks.find(x=>x.id===id)}:{col:"todos",id,keys:EDITABLE.task_t,doc:todos.find(x=>x.id===id)}}
+  const col={deadline:"roles",role:"roles",reply:"outreach",connect:"prospects",debrief:"debriefs"}[c.kind];const src={roles,outreach:outs,prospects,debriefs}[col];
+  return col?{col,id:c.id,keys:EDITABLE[c.kind],doc:(src||[]).find(x=>x.id===c.id)}:null}
+async function freeForm(raw,c,forceEdit){
+  if(!smp){await saveNote(raw);return}
+  deckBusy=true;$("vHint").textContent="Working on it…";
+  try{
+    let card="none";
+    if(c&&c.kind==="reply"){const o=outs.find(x=>x.id===c.id)||{};card=`A message card for ${o.name} (${o.co}), channel ${(o.draft_ch||o.ch)}. Why on the list: ${o.ctx||""}. Their record notes:\n${String(o.note||"").slice(-1200)}\nCurrent draft:\n${c.draft||""}`}
+    else if(c&&c.kind==="debrief"){const d=debriefs.find(x=>x.id===c.id)||{};const o=outs.find(x=>x.id===d.person)||{};card=`A debrief card for Tim's call with ${d.name} (${d.co||""}) on ${d.when}. Channel for thank yous: ${d.email||(o.ch==="email"?o.addr:"")?"email":"linkedin"}. Record notes:\n${String(o.note||"").slice(-1200)}`}
+    else if(c)card=`A ${KIND_LBL[c.kind]} card: ${c.title}. ${c.sub||""}`;
+    const et=c?editTarget(c):null;
+    if(et&&et.doc)card+=`\nThe record behind this card (fields you may correct: ${et.keys.join(", ")}):\n${JSON.stringify(Object.fromEntries(et.keys.map(k=>[k,et.doc[k]??""])))}`;
+    if(forceEdit)card+=`\nTim pressed Edit: he is correcting this card, so answer with type "edit".`;
+    const prompt=`You turn Tim's spoken words into one action for his job search tracker. It is ${nowLocal()} in Abu Dhabi (UTC+4).
+Card on screen: ${card}
+Calls Tim has around now:\n${callsContext()}
+Tim said: "${raw}"
+
+Reply with JSON only, one of:
+{"type":"answer","answer":"<one of: ${c?(OPTS[c.kind]||[]).map(x=>x[0]).join(", "):"none"}>"}  (Tim answered the card)
+{"type":"draft","draft":"<the full rewritten message>"}  (message card only: Tim said what to change or what to say; apply his change to the current draft and keep the rest)
+{"type":"debrief","note":"<one or two plain lines of what was discussed and agreed>","todos":[{"text":"<starts with a verb>","due":"YYYY-MM-DD or empty"}],"thanks":"<thank you message, 4 to 6 sentences, naming one or two specific things they said, anything Tim promised, anyone they suggested>"}  (debrief card only, Tim described the call)
+{"type":"edit","fields":{"<field>":"<corrected value>"}}  (Tim says the card is wrong or out of date; only the listed fields; dates as YYYY-MM-DD, times as YYYY-MM-DDTHH:MM:00+04:00)
+{"type":"move_call","who":"<person's name as in the calls list>","start":"YYYY-MM-DDTHH:MM"}  (a call's time changed; local Abu Dhabi time)
+{"type":"track","companies":["<company>"]}
+{"type":"todo","text":"<starts with a verb>","due":"YYYY-MM-DD or empty"}
+{"type":"note","text":"<Tim's words>"}  (anything else)
+${RULES}`;
+    const r=await smp.json(prompt,{modelTier:"default"});
+    await runAction(r,c,raw);
+  }catch(err){if(err&&err.code==="not_granted"){smp=null}await saveNote(raw)}
+  finally{deckBusy=false;setVoiceHint($("today").hidden?null:curCard())}
+}
+async function saveNote(raw){try{await db.collection("notes").doc("n"+Date.now().toString(36)).set({text:raw,at:new Date().toISOString(),st:"new",reply:"",tab:(TABS.find(t=>!$(t).hidden)||"")});toast("Saved as a note for tonight's sweep")}catch(e){toast("Could not save that.",true)}}
+async function runAction(r,c,raw){
+  const ty=r&&r.type;
+  if(ty==="answer"&&c&&(OPTS[c.kind]||[]).some(x=>x[0]===r.answer)){act(c,r.answer);return}
+  if(ty==="draft"&&c&&c.kind==="reply"&&r.draft){c.draft=r.draft;await db.doc("outreach/"+c.id).update({draft:r.draft,act:""});renderDeck();toast("Draft changed. Say approve to send it");return}
+  if(ty==="debrief"&&c&&c.kind==="debrief"){await fileDebrief(c,raw,r);return}
+  if(ty==="edit"&&c&&r.fields&&typeof r.fields==="object"){const et=editTarget(c);if(et){const patch={};for(const [k,v] of Object.entries(r.fields))if(et.keys.includes(k)&&typeof v==="string")patch[k]=v.trim();
+      if(Object.keys(patch).length){await db.doc(et.col+"/"+et.id).update(patch);editMode=false;Object.assign(et.doc||{},patch);const fresh=buildCardFor(c);toast("Card updated: "+Object.keys(patch).join(", "));if(fresh){deck.splice(deckPos,1,fresh);renderDeck()}else swipe("l");return}}
+    toast("I could not tell what to change. Say it again.",true);return}
+  if(ty==="move_call"&&r.who&&r.start){await prepareMove(r.who,r.start);return}
+  if(ty==="track"&&Array.isArray(r.companies)&&r.companies.length){await trackNames(r.companies.join(", "));return}
+  if(ty==="todo"&&r.text){await db.collection("todos").doc("t"+Date.now().toString(36)).set({text:r.text,due:r.due||"",done:false,done_date:"",src:"you",why:"Said by voice",at:new Date().toISOString()});toast("Added to your to do list"+(r.due?`, due ${fmtDate(r.due)}`:""));return}
+  await saveNote(raw);
+}
+async function fileDebrief(c,raw,r){
+  const d=debriefs.find(x=>x.id===c.id);if(!d)return;const o=outs.find(x=>x.id===d.person);const date=String(d.when).slice(0,10);
+  await db.doc("debriefs/"+d.id).update({points:raw,st:"used",used_at:new Date().toISOString()});
+  if(o){const ch=(d.email||o.ch==="email")?"email":"linkedin";
+    await db.doc("outreach/"+o.id).update({note:((o.note||"")+`\n${date}: Call. ${r.note||raw}`).trim(),owe:"reply",owed_since:date,ctx:`Thank you note after your call on ${fmtDate(date)}, from your debrief`,draft:r.thanks||"",draft_ch:ch,act:""});}
+  for(const [i,t] of (r.todos||[]).entries()){if(t&&t.text)await db.collection("todos").doc("t"+Date.now().toString(36)+i).set({text:t.text,due:t.due||"",done:false,done_date:"",src:"meeting",why:`From your call with ${d.name}`,at:new Date().toISOString()})}
+  toast(`Filed on ${d.name}'s card${(r.todos||[]).length?`, ${(r.todos||[]).length} to do${r.todos.length>1?"s":""} added`:""}, thank you drafted`);
+  if(o){deck=deck.filter((x,i)=>i<=deckPos||!(x.kind==="reply"&&x.id===o.id));deck.splice(deckPos+1,0,{kind:"reply",id:o.id,title:o.name,sub:`${o.co||""} · thank you`,body:"Thank you note from your debrief",draft:r.thanks||""})}
+  swipe("r");
+}
+/* moving a call */
+const loc=ms=>new Date(ms+4*36e5).toISOString().slice(0,19);
+const hm=ms=>loc(ms).slice(11,16);
+async function prepareMove(who,start){
+  if(!mcpNs){await saveNote(`Move the call with ${who} to ${start}`);return}
+  const first=who.trim().split(/\s+/)[0].toLowerCase(), day=start.slice(0,10);
+  let evs=[];try{const res=await mcpNs.callTool("Google Calendar","list_events",{startTime:addDays(day,-1)+"T00:00:00",endTime:addDays(day,2)+"T00:00:00",pageSize:250,orderBy:"startTime",fullText:first},{cache:false});evs=(res.payload&&res.payload.events)||[]}
+  catch(err){toast(err&&err.code==="needs_reauth"?"Google needs you to sign in again: Reconnect Google, at the bottom of the page.":err&&err.code==="server_not_connected"?"Google Calendar is not connected: Reconnect Google, at the bottom of the page.":"Could not read your calendar. Saved as a note instead.",true);await saveNote(`Move the call with ${who} to ${start}`);return}
+  evs=evs.filter(e=>e.start&&e.start.dateTime&&String(e.summary||"").toLowerCase().includes(first));
+  const main=evs.find(e=>/^\[Radar\] Call/i.test(e.summary))||evs.find(e=>!/^\[(Plan|Radar)\]/.test(e.summary))||evs.find(e=>/Prep/i.test(e.summary));
+  if(!main){toast(`No call with ${who} found on your calendar. Saved as a note.`,true);await saveNote(`Move the call with ${who} to ${start}`);return}
+  const m0=Date.parse(main.start.dateTime), mainStart=/Prep/i.test(main.summary)?Date.parse(main.end.dateTime):m0;
+  const delta=Date.parse(start+":00+04:00")-mainStart;if(!delta){toast("That is already the time.");return}
+  const near=evs.filter(e=>Math.abs(Date.parse(e.start.dateTime)-mainStart)<6*36e5);
+  const mine=near.filter(e=>/^\[(Plan|Radar)\]/.test(e.summary)||(e.organizer&&e.organizer.self));
+  const theirs=near.filter(e=>!mine.includes(e));
+  const lines=mine.map(e=>`${e.summary}: moves from ${hm(Date.parse(e.start.dateTime))} to ${hm(Date.parse(e.start.dateTime)+delta)}`);
+  pendingMove={card:{kind:"confirm",id:"move",title:`Move the call with ${who}?`,sub:`New start ${start.slice(11)} on ${fmtDate(day)}`,body:lines.join("\n")+(theirs.length?`\n\n${theirs.map(e=>e.summary).join(", ")} is their invitation, so it stays as it is. Ask them to move it.`:""),move:{who,first,delta,mine,start}}};
+  show("today",true);renderDeck();
+}
+async function applyMove(mv){
+  let ok=0,fail=0;
+  for(const e of mv.mine){try{await mcpNs.callTool("Google Calendar","update_event",{eventId:e.id,startTime:loc(Date.parse(e.start.dateTime)+mv.delta),endTime:loc(Date.parse(e.end.dateTime)+mv.delta),notificationLevel:"NONE"},{cache:false});ok++}catch(err){fail++}}
+  for(const d of debriefs.filter(x=>String(x.name||"").toLowerCase().includes(mv.first)&&x.when&&Math.abs(Date.parse(x.when)-(Date.parse(mv.start+":00+04:00")-mv.delta))<6*36e5)){
+    try{await db.doc("debriefs/"+d.id).update({when:mv.start+":00+04:00"})}catch(err){}}
+  const dd=days.find(x=>x.id===mv.start.slice(0,10));
+  if(dd&&Array.isArray(dd.calls)){const calls=dd.calls.map(x=>String(x.title||"").toLowerCase().includes(mv.first)?{...x,time:mv.start.slice(11)}:x);try{await db.doc("days/"+dd.id).update({calls})}catch(err){}}
+  toast(fail?`Moved ${ok}, ${fail} failed. Check your calendar.`:`Moved ${ok} event${ok===1?"":"s"} and updated Today`,!!fail);
+}
+/* boot */
+function maybeStartDeck(){if(deckBuilt||!loaded.roles||!loaded.outs||!loadedT.checks)return;setTimeout(()=>{if(!deckBuilt)startDeck(BOOT_HASH==="debrief"?"debrief":null)},700)}
+if(BOOT_HASH==="debrief")show("today",false);
+
+(async()=>{
+  db=await claude.use("db");
+  if(!db){const m="Your saved data could not load in this view. Open the page from claude.ai to see and edit it.";
+    $("openCards").innerHTML=$("peopleCards").innerHTML=`<div class="empty">${m}</div>`;$("dSum").textContent=m;$("coRows").innerHTML=$("appRows").innerHTML=$("outRows").innerHTML=`<tr><td colspan="7" class="auto">${m}</td></tr>`;return}
+  db.collection("roles").onSnapshot(s=>{roles=s.docs.map(d=>({id:d.id,...d.data()}));loaded.roles=true;renderAll()},()=>toast("Roles stopped updating. Reload the page.",true));
+  db.collection("companies").onSnapshot(s=>{cos=s.docs.map(d=>({id:d.id,...d.data()}));loaded.cos=true;renderAll()},()=>toast("Companies stopped updating. Reload the page.",true));
+  db.collection("outreach").onSnapshot(s=>{outs=s.docs.map(d=>({id:d.id,...d.data()}));loaded.outs=true;renderAll()},()=>toast("Outreach stopped updating. Reload the page.",true));
+  db.collection("days").onSnapshot(s=>{days=s.docs.map(d=>({id:d.id,...d.data()}));loadedT.days=true;renderAll()},()=>toast("Today stopped updating. Reload the page.",true));
+  db.collection("checks").onSnapshot(s=>{checks=s.docs.map(d=>({id:d.id,...d.data()}));loadedT.checks=true;renderAll()},()=>{});
+  db.collection("todos").onSnapshot(s=>{todos=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},()=>{});
+  db.collection("debriefs").onSnapshot(s=>{debriefs=s.docs.map(d=>({id:d.id,...d.data()}));renderAll()},()=>{});
+  db.collection("prospects").onSnapshot(s=>{prospects=s.docs.map(d=>({id:d.id,...d.data()}));renderProspects()},()=>{});
+  db.collection("templates").onSnapshot(s=>{tpls=s.docs.map(d=>({id:d.id,...d.data()}));renderTpls()},()=>{});
+  db.collection("notes").onSnapshot(s=>{notes=s.docs.map(d=>({id:d.id,...d.data()}));renderNotes()},()=>{});
+  db.collection("system").onSnapshot(s=>{const d=s.docs.find(x=>x.id==="status");sys=d?d.data():{};renderAll()},()=>{});
+})();
+</script>
+
+<script src="voice.js?v=1792840840"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
