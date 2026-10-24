@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792842253"></script></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1F5E73"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script><script src="shim.js?v=1792842793"></script></head><body>
 <title>Role Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,6 +97,7 @@ tr.flash td{background:var(--warn-soft)}
 .vbar input{flex:1;font-size:16px;border:none;background:transparent;padding:8px 6px}
 .vbar input:focus-visible{outline:none}
 .vbar .vh{font-size:12px;color:var(--faint);padding:0 6px}
+.vbar .vsay{font-size:13px;color:var(--ok);padding:0 6px}.vbar .vsay:empty{display:none}.vbar .vsay.bad{color:var(--crit)}
 #vMic.on{background:var(--crit);border-color:var(--crit)}
 details.lists>summary{cursor:pointer;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600;padding:8px 0}
 details.lists[open]{display:flex;flex-direction:column;gap:14px}
@@ -266,7 +267,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.tab{transition:background .15s ease}}
 </style>
 
-<link rel="stylesheet" href="app.css?v=1792842253">
+<link rel="stylesheet" href="app.css?v=1792842793">
 <div class="wrap">
 
 
@@ -432,7 +433,7 @@ button.ed-b:hover{color:var(--accent);border-color:var(--accent)}
   <div id="edFields"></div>
   <div class="btns"><button type="button" class="quiet" id="edCancel">Cancel</button><button type="submit" id="edSave">Save</button></div>
 </form></dialog>
-<div class="vbar" id="vBar"><div class="vr"><input id="vIn" placeholder="Say or type a command" aria-label="Voice command" autocomplete="off"><button id="vMic" class="ghost" aria-label="Listen">Mic</button><button id="vGo">Go</button></div><div class="vh" id="vHint">Say a command</div></div>
+<div class="vbar" id="vBar"><div class="vr"><input id="vIn" placeholder="Say or type a command" aria-label="Voice command" autocomplete="off"><button id="vMic" class="ghost" aria-label="Listen">Mic</button><button id="vGo">Go</button></div><div class="vh" id="vHint">Say a command</div><div class="vsay" id="vSay" aria-live="polite"></div></div>
 <button class="fab" id="vFab" hidden aria-label="Speak"></button>
 <div class="toast" id="toast" hidden></div>
 
@@ -1020,52 +1021,77 @@ const EDITABLE={deadline:["co","role","deadline","loc","why"],role:["co","role",
 function editTarget(c){if(c.kind==="task"){const [t,id]=c.id.split("/");return t==="c"?{col:"checks",id,keys:EDITABLE.task_c,doc:checks.find(x=>x.id===id)}:{col:"todos",id,keys:EDITABLE.task_t,doc:todos.find(x=>x.id===id)}}
   const col={deadline:"roles",role:"roles",reply:"outreach",connect:"prospects",debrief:"debriefs"}[c.kind];const src={roles,outreach:outs,prospects,debriefs}[col];
   return col?{col,id:c.id,keys:EDITABLE[c.kind],doc:(src||[]).find(x=>x.id===c.id)}:null}
+function say(t,bad){const el=$("vSay");if(!el)return;el.textContent=t||"";el.classList.toggle("bad",!!bad);clearTimeout(el._t);if(t)el._t=setTimeout(()=>{el.textContent=""},12000)}
 async function freeForm(raw,c,forceEdit){
-  if(!smp){await saveNote(raw);return}
-  deckBusy=true;$("vHint").textContent="Working on it…";
+  if(!smp){await saveNote(raw);say("Saved as a note for tonight's run: \""+raw+"\"");return}
+  deckBusy=true;$("vHint").textContent="Working on it…";say("Heard: \""+raw+"\". Working on it…");
   try{
     let card="none";
     if(c&&c.kind==="reply"){const o=outs.find(x=>x.id===c.id)||{};card=`A message card for ${o.name} (${o.co}), channel ${(o.draft_ch||o.ch)}. Why on the list: ${o.ctx||""}. Their record notes:\n${String(o.note||"").slice(-1200)}\nCurrent draft:\n${c.draft||""}`}
-    else if(c&&c.kind==="debrief"){const d=debriefs.find(x=>x.id===c.id)||{};const o=outs.find(x=>x.id===d.person)||{};card=`A debrief card for Tim's call with ${d.name} (${d.co||""}) on ${d.when}. Channel for thank yous: ${d.email||(o.ch==="email"?o.addr:"")?"email":"linkedin"}. Record notes:\n${String(o.note||"").slice(-1200)}`}
-    else if(c)card=`A ${KIND_LBL[c.kind]} card: ${c.title}. ${c.sub||""}`;
+    else if(c&&c.kind==="debrief"){const d=debriefs.find(x=>x.id===c.id)||{};const o=outs.find(x=>x.id===d.person)||{};card=`A debrief card asking how Tim's call with ${d.name} (${d.co||""}) on ${d.when} went. Channel for thank yous: ${d.email||(o.ch==="email"?o.addr:"")?"email":"linkedin"}. Record notes:\n${String(o.note||"").slice(-1200)}`}
+    else if(c)card=`A ${KIND_LBL[c.kind]} card: ${c.title}. ${c.sub||""} ${c.body||""}`;
     const et=c?editTarget(c):null;
     if(et&&et.doc)card+=`\nThe record behind this card (fields you may correct: ${et.keys.join(", ")}):\n${JSON.stringify(Object.fromEntries(et.keys.map(k=>[k,et.doc[k]??""])))}`;
-    if(forceEdit)card+=`\nTim pressed Edit: he is correcting this card, so answer with type "edit".`;
-    const prompt=`You turn Tim's spoken words into one action for his job search tracker. It is ${nowLocal()} in Abu Dhabi (UTC+4).
+    if(forceEdit)card+=`\nTim pressed Edit: he is correcting this card, so include an "edit" action.`;
+    const prompt=`You are the voice assistant inside Tim's job search tracker. Turn what Tim said into actions. His words come from speech recognition, so they may be garbled or missing words: work out what he most likely meant from the card and his records. It is ${nowLocal()} in Abu Dhabi (UTC+4).
 Card on screen: ${card}
+Card answers available: ${c?(OPTS[c.kind]||[]).map(x=>x[0]).join(", "):"none (no card)"}
 Calls Tim has around now:\n${callsContext()}
 Tim said: "${raw}"
 
-Reply with JSON only, one of:
-{"type":"answer","answer":"<one of: ${c?(OPTS[c.kind]||[]).map(x=>x[0]).join(", "):"none"}>"}  (Tim answered the card)
-{"type":"draft","draft":"<the full rewritten message>"}  (message card only: Tim said what to change or what to say; apply his change to the current draft and keep the rest)
-{"type":"debrief","note":"<one or two plain lines of what was discussed and agreed>","todos":[{"text":"<starts with a verb>","due":"YYYY-MM-DD or empty"}],"thanks":"<thank you message, 4 to 6 sentences, naming one or two specific things they said, anything Tim promised, anyone they suggested>"}  (debrief card only, Tim described the call)
-{"type":"edit","fields":{"<field>":"<corrected value>"}}  (Tim says the card is wrong or out of date; only the listed fields; dates as YYYY-MM-DD, times as YYYY-MM-DDTHH:MM:00+04:00)
-{"type":"move_call","who":"<person's name as in the calls list>","start":"YYYY-MM-DDTHH:MM"}  (a call's time changed; local Abu Dhabi time)
-{"type":"track","companies":["<company>"]}
-{"type":"todo","text":"<starts with a verb>","due":"YYYY-MM-DD or empty"}
-{"type":"note","text":"<Tim's words>"}  (anything else)
+Reply with JSON only: {"heard":"<what Tim meant, cleaned up, one line>","actions":[...],"say":"<one short sentence telling Tim exactly what you did>"}
+Possible actions, use as many as his words call for:
+{"do":"answer","answer":"<one of the card answers>"}  (he answered the card; put it last)
+{"do":"draft","draft":"<full rewritten message>"}  (message card: change the draft as he said, keep the rest)
+{"do":"debrief","note":"<one or two plain lines of what was discussed and agreed>","thanks":"<thank you message, 4 to 6 sentences, specific to what he said>"}  (debrief card, only when he describes a call that happened)
+{"do":"note","text":"<one plain line to add to the record of the person or role on this card>"}
+{"do":"todo","text":"<a task starting with a verb>","due":"YYYY-MM-DD or empty"}
+{"do":"later"}  (bring this card back tomorrow, for example when something is still pending)
+{"do":"edit","fields":{"<field>":"<corrected value>"}}  (the card is wrong; only the listed fields; dates YYYY-MM-DD, times YYYY-MM-DDTHH:MM:00+04:00)
+{"do":"move_call","who":"<name as in the calls list>","start":"YYYY-MM-DDTHH:MM"}
+{"do":"track","companies":["<company>"]}
+{"do":"keep_note","text":"<his words>"}  (only if nothing above fits; the evening run will handle it)
+Example: on a debrief card he says the call never really happened and he needs to chase them because they never emailed: note "They have not emailed since the presentation; Tim to follow up", todo "Follow up with <company> about the presentation", later.
 ${RULES}`;
     const r=await smp.json(prompt,{modelTier:"default"});
-    await runAction(r,c,raw);
-  }catch(err){if(err&&err.code==="not_granted"){smp=null}await saveNote(raw)}
+    await runActions(r,c,raw);
+  }catch(err){if(err&&err.code==="not_granted"){smp=null}await saveNote(raw);say("I couldn't process that, so I saved it as a note for tonight's run.",true)}
   finally{deckBusy=false;setVoiceHint($("today").hidden?null:curCard())}
 }
 async function saveNote(raw){try{await db.collection("notes").doc("n"+Date.now().toString(36)).set({text:raw,at:new Date().toISOString(),st:"new",reply:"",tab:(TABS.find(t=>!$(t).hidden)||"")});toast("Saved as a note for tonight's sweep")}catch(e){toast("Could not save that.",true)}}
-async function runAction(r,c,raw){
-  const ty=r&&r.type;
-  if(ty==="answer"&&c&&(OPTS[c.kind]||[]).some(x=>x[0]===r.answer)){act(c,r.answer);return}
-  if(ty==="draft"&&c&&c.kind==="reply"&&r.draft){c.draft=r.draft;await db.doc("outreach/"+c.id).update({draft:r.draft,act:""});renderDeck();toast("Draft changed. Say approve to send it");return}
-  if(ty==="debrief"&&c&&c.kind==="debrief"){await fileDebrief(c,raw,r);return}
-  if(ty==="edit"&&c&&r.fields&&typeof r.fields==="object"){const et=editTarget(c);if(et){const patch={};for(const [k,v] of Object.entries(r.fields))if(et.keys.includes(k)&&typeof v==="string")patch[k]=v.trim();
-      if(Object.keys(patch).length){await db.doc(et.col+"/"+et.id).update(patch);editMode=false;Object.assign(et.doc||{},patch);const fresh=buildCardFor(c);toast("Card updated: "+Object.keys(patch).join(", "));if(fresh){deck.splice(deckPos,1,fresh);renderDeck()}else swipe("l");return}}
-    toast("I could not tell what to change. Say it again.",true);return}
-  if(ty==="move_call"&&r.who&&r.start){await prepareMove(r.who,r.start);return}
-  if(ty==="track"&&Array.isArray(r.companies)&&r.companies.length){await trackNames(r.companies.join(", "));return}
-  if(ty==="todo"&&r.text){await db.collection("todos").doc("t"+Date.now().toString(36)).set({text:r.text,due:r.due||"",done:false,done_date:"",src:"you",why:"Said by voice",at:new Date().toISOString()});toast("Added to your to do list"+(r.due?`, due ${fmtDate(r.due)}`:""));return}
-  await saveNote(raw);
+async function addRecordNote(c,text){if(!c||!text)return false;const date=today();
+  let col=null,id=null,doc=null;
+  if(c.kind==="reply"){col="outreach";id=c.id;doc=outs.find(x=>x.id===id)}
+  else if(c.kind==="debrief"){const d=debriefs.find(x=>x.id===c.id);if(d&&d.person){col="outreach";id=d.person;doc=outs.find(x=>x.id===id)}}
+  else if(c.kind==="deadline"||c.kind==="role"){col="roles";id=c.id;doc=roles.find(x=>x.id===id)}
+  else if(c.kind==="connect"){col="prospects";id=c.id;doc=prospects.find(x=>x.id===id)}
+  if(!col||!doc)return false;
+  const field=col==="prospects"?"why":"note";const line=col==="prospects"?text:`${date}: ${text}`;
+  await db.doc(col+"/"+id).update({[field]:col==="prospects"?line:((doc.note||"")+"\n"+line).trim()});return true}
+async function runActions(r,c,raw){
+  const acts=Array.isArray(r&&r.actions)?r.actions:(r&&r.type?[{...r,do:r.type}]:[]);
+  if(!acts.length){await saveNote(raw);say("I wasn't sure what to do, so I saved it as a note for tonight's run.",true);return}
+  let answer=null,later=false,filed=false,rerender=false,moved=false;const done=[];
+  for(const a of acts){try{
+    if(a.do==="answer"&&c&&(OPTS[c.kind]||[]).some(x=>x[0]===a.answer))answer=a.answer;
+    else if(a.do==="draft"&&c&&c.kind==="reply"&&a.draft){c.draft=a.draft;await db.doc("outreach/"+c.id).update({draft:a.draft,act:""});rerender=true;done.push("draft changed")}
+    else if(a.do==="debrief"&&c&&c.kind==="debrief"){await fileDebrief(c,raw,{note:a.note,thanks:a.thanks,todos:[]},true);filed=true;done.push("call filed")}
+    else if(a.do==="note"&&a.text){if(await addRecordNote(c,a.text))done.push("note added")}
+    else if(a.do==="todo"&&a.text){await db.collection("todos").doc("t"+Date.now().toString(36)+done.length).set({text:a.text,due:a.due||"",done:false,done_date:"",src:"you",why:c?("From the card: "+c.title):"Said by voice",at:new Date().toISOString()});done.push("to do added")}
+    else if(a.do==="later")later=true;
+    else if(a.do==="edit"&&c&&a.fields){const et=editTarget(c);if(et){const patch={};for(const [k,v] of Object.entries(a.fields))if(et.keys.includes(k)&&typeof v==="string")patch[k]=v.trim();
+        if(Object.keys(patch).length){await db.doc(et.col+"/"+et.id).update(patch);Object.assign(et.doc||{},patch);editMode=false;const fresh=buildCardFor(c);if(fresh){deck.splice(deckPos,1,fresh);c=fresh}rerender=true;done.push("card corrected")}}}
+    else if(a.do==="move_call"&&a.who&&a.start){await prepareMove(a.who,a.start);moved=true}
+    else if(a.do==="track"&&Array.isArray(a.companies)&&a.companies.length){await trackNames(a.companies.join(", "));done.push("tracking "+a.companies.join(", "))}
+    else if(a.do==="keep_note"){await saveNote(a.text||raw);done.push("saved as a note")}
+  }catch(e){console.error(e)}}
+  say((r.say||done.join(", ")||"Done")+(r.heard?`  (heard: "${r.heard}")`:""));
+  if(moved)return;
+  if(answer){act(c,answer);return}
+  if(c&&(later||filed)){if(later&&!filed)markSkip(c.kind+":"+c.id);swipe(filed?"r":"l");return}
+  if(rerender)renderDeck();
 }
-async function fileDebrief(c,raw,r){
+async function fileDebrief(c,raw,r,noSwipe){
   const d=debriefs.find(x=>x.id===c.id);if(!d)return;const o=outs.find(x=>x.id===d.person);const date=String(d.when).slice(0,10);
   await db.doc("debriefs/"+d.id).update({points:raw,st:"used",used_at:new Date().toISOString()});
   if(o){const ch=(d.email||o.ch==="email")?"email":"linkedin";
@@ -1073,7 +1099,7 @@ async function fileDebrief(c,raw,r){
   for(const [i,t] of (r.todos||[]).entries()){if(t&&t.text)await db.collection("todos").doc("t"+Date.now().toString(36)+i).set({text:t.text,due:t.due||"",done:false,done_date:"",src:"meeting",why:`From your call with ${d.name}`,at:new Date().toISOString()})}
   toast(`Filed on ${d.name}'s card${(r.todos||[]).length?`, ${(r.todos||[]).length} to do${r.todos.length>1?"s":""} added`:""}, thank you drafted`);
   if(o){deck=deck.filter((x,i)=>i<=deckPos||!(x.kind==="reply"&&x.id===o.id));deck.splice(deckPos+1,0,{kind:"reply",id:o.id,title:o.name,sub:`${o.co||""} · thank you`,body:"Thank you note from your debrief",draft:r.thanks||""})}
-  swipe("r");
+  if(!noSwipe)swipe("r");
 }
 /* moving a call */
 const loc=ms=>new Date(ms+4*36e5).toISOString().slice(0,19);
@@ -1126,4 +1152,4 @@ if(BOOT_HASH==="debrief")show("today",false);
 })();
 </script>
 
-<script src="voice.js?v=1792842253"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
+<script src="voice.js?v=1792842793"></script><script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{})</script></body></html>
