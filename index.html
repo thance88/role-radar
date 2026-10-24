@@ -497,7 +497,7 @@ function renderCos(){
   if(!loaded.cos)return;
   renderCoReg();
   const q=$("qCo").value.trim().toLowerCase(), fs=$("fCoSec").value;
-  const rows=cos.filter(c=>(coReg==="all"||regionsOf(c).includes(coReg))&&(!fs||c.sector===fs)&&(!q||`${c.name} ${c.region} ${c.mine} ${c.nt} ${c.about||""}`.toLowerCase().includes(q)))
+  const rows=cos.filter(c=>(c.st==="queued"||coReg==="all"||regionsOf(c).includes(coReg))&&(c.st==="queued"||!fs||c.sector===fs)&&(!q||`${c.name} ${c.input||""} ${c.region} ${c.mine} ${c.nt} ${c.about||""}`.toLowerCase().includes(q)))
     .sort((a,b)=>String(a.name).localeCompare(String(b.name)));
   if(!cos.length){$("coRows").innerHTML=`<tr><td colspan="7" class="auto">No companies yet. Drop one in the box above and the morning run will start checking it.</td></tr>`;return}
   if(!rows.length){$("coRows").innerHTML=`<tr><td colspan="7" class="auto">No companies match this filter.</td></tr>`;return}
